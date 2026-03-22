@@ -3,52 +3,36 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Plus, Search, AlertTriangle, Pencil, Check, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-
-interface Item {
-  id: number;
-  nome: string;
-  codigo: string;
-  quantidade: number;
-  tipo: string;
-}
-
-const initialItems: Item[] = [
-  { id: 1, nome: "Filtro de Óleo", codigo: "FO-001", quantidade: 12, tipo: "Filtro" },
-  { id: 2, nome: "Pastilha de Freio", codigo: "PF-002", quantidade: 8, tipo: "Freio" },
-  { id: 3, nome: "Pneu 195/65R15", codigo: "PN-003", quantidade: 4, tipo: "Pneu" },
-  { id: 4, nome: "Correia Dentada", codigo: "CD-004", quantidade: 0, tipo: "Motor" },
-  { id: 5, nome: "Amortecedor Dianteiro", codigo: "AD-005", quantidade: 6, tipo: "Suspensão" },
-  { id: 6, nome: "Vela de Ignição", codigo: "VI-006", quantidade: 20, tipo: "Motor" },
-  { id: 7, nome: "Pneu 205/55R16", codigo: "PN-007", quantidade: 2, tipo: "Pneu" },
-  { id: 8, nome: "Óleo Motor 5W30", codigo: "OM-008", quantidade: 15, tipo: "Lubrificante" },
-];
+import { initialItems, TIPOS_PECA, type ItemEstoque } from "@/data/pecas";
 
 const Estoque = () => {
-  const [items, setItems] = useState<Item[]>(initialItems);
+  const [items, setItems] = useState<ItemEstoque[]>(initialItems);
   const [search, setSearch] = useState("");
+  const [filterTipo, setFilterTipo] = useState("");
   const [showAdd, setShowAdd] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
-  const [editItem, setEditItem] = useState<Item | null>(null);
+  const [editItem, setEditItem] = useState<ItemEstoque | null>(null);
   const [newItem, setNewItem] = useState({ nome: "", codigo: "", quantidade: 0, tipo: "" });
   const { toast } = useToast();
 
   const filtered = items.filter(
     (i) =>
-      i.nome.toLowerCase().includes(search.toLowerCase()) ||
-      i.codigo.toLowerCase().includes(search.toLowerCase())
+      (i.nome.toLowerCase().includes(search.toLowerCase()) ||
+        i.codigo.toLowerCase().includes(search.toLowerCase())) &&
+      (filterTipo ? i.tipo === filterTipo : true)
   );
 
   const lowStock = items.filter((i) => i.quantidade <= 2);
 
   const handleAdd = () => {
-    if (!newItem.nome || !newItem.codigo) return;
+    if (!newItem.nome || !newItem.codigo || !newItem.tipo) return;
     setItems([...items, { ...newItem, id: Date.now() }]);
     setNewItem({ nome: "", codigo: "", quantidade: 0, tipo: "" });
     setShowAdd(false);
     toast({ title: "Item adicionado ao estoque" });
   };
 
-  const startEdit = (item: Item) => {
+  const startEdit = (item: ItemEstoque) => {
     setEditingId(item.id);
     setEditItem({ ...item });
   };
@@ -69,7 +53,7 @@ const Estoque = () => {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-4">
-        <h2 className="font-display text-2xl font-bold text-glow-green">ESTOQUE & PNEUS</h2>
+        <h2 className="font-display text-2xl font-bold text-glow-green">ESTOQUE & PEÇAS</h2>
         <Button variant="neonCyan" onClick={() => setShowAdd(true)}>
           <Plus className="w-4 h-4" />
           Novo Item
@@ -92,14 +76,26 @@ const Estoque = () => {
         </motion.div>
       )}
 
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-        <input
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="input-neon w-full pl-10"
-          placeholder="Buscar por nome ou código..."
-        />
+      <div className="flex gap-3 flex-wrap">
+        <div className="relative flex-1 min-w-[200px]">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="input-neon w-full pl-10"
+            placeholder="Buscar por nome ou código..."
+          />
+        </div>
+        <select
+          value={filterTipo}
+          onChange={(e) => setFilterTipo(e.target.value)}
+          className="input-neon min-w-[160px]"
+        >
+          <option value="">Todos os Tipos</option>
+          {TIPOS_PECA.map((t) => (
+            <option key={t} value={t}>{t}</option>
+          ))}
+        </select>
       </div>
 
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="card-floating overflow-hidden">
@@ -122,7 +118,11 @@ const Estoque = () => {
                       <td className="py-2 px-4"><input value={editItem.nome} onChange={(e) => setEditItem({ ...editItem, nome: e.target.value })} className="input-neon w-full text-xs py-1" /></td>
                       <td className="py-2 px-4"><input value={editItem.codigo} onChange={(e) => setEditItem({ ...editItem, codigo: e.target.value })} className="input-neon w-full text-xs py-1 font-mono" /></td>
                       <td className="py-2 px-4"><input type="number" value={editItem.quantidade} onChange={(e) => setEditItem({ ...editItem, quantidade: Number(e.target.value) })} className="input-neon w-20 text-xs py-1" /></td>
-                      <td className="py-2 px-4"><input value={editItem.tipo} onChange={(e) => setEditItem({ ...editItem, tipo: e.target.value })} className="input-neon w-full text-xs py-1" /></td>
+                      <td className="py-2 px-4">
+                        <select value={editItem.tipo} onChange={(e) => setEditItem({ ...editItem, tipo: e.target.value })} className="input-neon w-full text-xs py-1">
+                          {TIPOS_PECA.map((t) => <option key={t} value={t}>{t}</option>)}
+                        </select>
+                      </td>
                       <td className="py-2 px-4 flex gap-1">
                         <button onClick={saveEdit} className="text-primary hover:text-primary/80"><Check className="w-4 h-4" /></button>
                         <button onClick={cancelEdit} className="text-destructive hover:text-destructive/80"><X className="w-4 h-4" /></button>
@@ -143,7 +143,11 @@ const Estoque = () => {
                           {item.quantidade}
                         </span>
                       </td>
-                      <td className="py-3 px-4 text-muted-foreground">{item.tipo}</td>
+                      <td className="py-3 px-4">
+                        <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-primary/10 text-primary">
+                          {item.tipo}
+                        </span>
+                      </td>
                       <td className="py-3 px-4">
                         <button onClick={() => startEdit(item)} className="text-muted-foreground hover:text-primary transition-colors">
                           <Pencil className="w-4 h-4" />
@@ -153,6 +157,9 @@ const Estoque = () => {
                   )}
                 </tr>
               ))}
+              {filtered.length === 0 && (
+                <tr><td colSpan={5} className="py-8 text-center text-muted-foreground">Nenhum item encontrado</td></tr>
+              )}
             </tbody>
           </table>
         </div>
@@ -180,7 +187,10 @@ const Estoque = () => {
                 <input value={newItem.nome} onChange={(e) => setNewItem({ ...newItem, nome: e.target.value })} className="input-neon w-full" placeholder="Nome da peça" />
                 <input value={newItem.codigo} onChange={(e) => setNewItem({ ...newItem, codigo: e.target.value })} className="input-neon w-full" placeholder="Código de referência" />
                 <input value={newItem.quantidade} onChange={(e) => setNewItem({ ...newItem, quantidade: Number(e.target.value) })} className="input-neon w-full" placeholder="Quantidade" type="number" />
-                <input value={newItem.tipo} onChange={(e) => setNewItem({ ...newItem, tipo: e.target.value })} className="input-neon w-full" placeholder="Tipo (Pneu, Motor, etc.)" />
+                <select value={newItem.tipo} onChange={(e) => setNewItem({ ...newItem, tipo: e.target.value })} className="input-neon w-full">
+                  <option value="">Selecione o Tipo</option>
+                  {TIPOS_PECA.map((t) => <option key={t} value={t}>{t}</option>)}
+                </select>
               </div>
               <div className="flex gap-3 mt-5">
                 <Button variant="neonCyan" className="flex-1" onClick={handleAdd}>Salvar</Button>
