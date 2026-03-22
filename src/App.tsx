@@ -6,6 +6,7 @@ import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import OSVeiculo from "./pages/OSVeiculo";
+import OSRastreamento from "./pages/OSRastreamento";
 import Estoque from "./pages/Estoque";
 import GestaoUsuarios from "./pages/GestaoUsuarios";
 import AppLayout from "./components/AppLayout";
