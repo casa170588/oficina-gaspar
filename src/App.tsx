@@ -6,6 +6,7 @@ import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import OSVeiculo from "./pages/OSVeiculo";
+import OSRastreamento from "./pages/OSRastreamento";
 import Estoque from "./pages/Estoque";
 import GestaoUsuarios from "./pages/GestaoUsuarios";
 import AppLayout from "./components/AppLayout";
@@ -27,6 +28,7 @@ const AppRoutes = () => {
       <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/os-veiculo" element={<OSVeiculo />} />
+        <Route path="/os-rastreamento" element={<OSRastreamento />} />
         <Route path="/estoque" element={<Estoque />} />
         <Route path="/usuarios" element={<GestaoUsuarios />} />
       </Route>
