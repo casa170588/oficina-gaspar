@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { Plus, Search, AlertTriangle } from "lucide-react";
+import { Plus, Search, AlertTriangle, Pencil, Check, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface Item {
@@ -27,6 +27,8 @@ const Estoque = () => {
   const [items, setItems] = useState<Item[]>(initialItems);
   const [search, setSearch] = useState("");
   const [showAdd, setShowAdd] = useState(false);
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editItem, setEditItem] = useState<Item | null>(null);
   const [newItem, setNewItem] = useState({ nome: "", codigo: "", quantidade: 0, tipo: "" });
   const { toast } = useToast();
 
@@ -46,10 +48,28 @@ const Estoque = () => {
     toast({ title: "Item adicionado ao estoque" });
   };
 
+  const startEdit = (item: Item) => {
+    setEditingId(item.id);
+    setEditItem({ ...item });
+  };
+
+  const saveEdit = () => {
+    if (!editItem) return;
+    setItems(items.map((i) => (i.id === editItem.id ? editItem : i)));
+    setEditingId(null);
+    setEditItem(null);
+    toast({ title: "Item atualizado" });
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setEditItem(null);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-4">
-        <h2 className="font-display text-2xl font-bold text-glow-cyan">ESTOQUE & PNEUS</h2>
+        <h2 className="font-display text-2xl font-bold text-glow-green">ESTOQUE & PNEUS</h2>
         <Button variant="neonCyan" onClick={() => setShowAdd(true)}>
           <Plus className="w-4 h-4" />
           Novo Item
@@ -57,14 +77,14 @@ const Estoque = () => {
       </div>
 
       {lowStock.length > 0 && (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-destructive/10 border border-destructive/30 rounded-xl p-4 glow-red">
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-primary/5 border border-primary/30 rounded-xl p-4 glow-green">
           <div className="flex items-center gap-2 mb-2">
-            <AlertTriangle className="w-5 h-5 text-destructive" />
-            <span className="font-display font-bold text-destructive text-sm">ALERTAS DE ESTOQUE BAIXO</span>
+            <AlertTriangle className="w-5 h-5 text-primary" />
+            <span className="font-display font-bold text-primary text-sm">ALERTAS DE ESTOQUE BAIXO</span>
           </div>
           <div className="flex flex-wrap gap-2">
             {lowStock.map((i) => (
-              <span key={i.id} className="text-xs bg-destructive/20 text-destructive rounded-full px-3 py-1 font-semibold">
+              <span key={i.id} className="text-xs bg-primary/10 text-primary rounded-full px-3 py-1 font-semibold">
                 {i.nome}: {i.quantidade} un.
               </span>
             ))}
@@ -91,25 +111,46 @@ const Estoque = () => {
                 <th className="text-left py-3 px-4 text-muted-foreground uppercase tracking-wider text-xs">Cód. Referência</th>
                 <th className="text-left py-3 px-4 text-muted-foreground uppercase tracking-wider text-xs">Quantidade</th>
                 <th className="text-left py-3 px-4 text-muted-foreground uppercase tracking-wider text-xs">Tipo</th>
+                <th className="text-left py-3 px-4 text-muted-foreground uppercase tracking-wider text-xs">Ações</th>
               </tr>
             </thead>
             <tbody>
               {filtered.map((item) => (
                 <tr key={item.id} className="border-b border-border/30 hover:bg-muted/20 transition-colors">
-                  <td className="py-3 px-4 font-semibold">{item.nome}</td>
-                  <td className="py-3 px-4 text-muted-foreground font-mono text-xs">{item.codigo}</td>
-                  <td className="py-3 px-4">
-                    <span className={`px-2 py-1 rounded-full text-xs font-bold ${
-                      item.quantidade === 0
-                        ? "bg-destructive/20 text-destructive"
-                        : item.quantidade <= 5
-                        ? "bg-secondary/20 text-secondary"
-                        : "bg-neon-green/10 text-neon-green"
-                    }`}>
-                      {item.quantidade}
-                    </span>
-                  </td>
-                  <td className="py-3 px-4 text-muted-foreground">{item.tipo}</td>
+                  {editingId === item.id && editItem ? (
+                    <>
+                      <td className="py-2 px-4"><input value={editItem.nome} onChange={(e) => setEditItem({ ...editItem, nome: e.target.value })} className="input-neon w-full text-xs py-1" /></td>
+                      <td className="py-2 px-4"><input value={editItem.codigo} onChange={(e) => setEditItem({ ...editItem, codigo: e.target.value })} className="input-neon w-full text-xs py-1 font-mono" /></td>
+                      <td className="py-2 px-4"><input type="number" value={editItem.quantidade} onChange={(e) => setEditItem({ ...editItem, quantidade: Number(e.target.value) })} className="input-neon w-20 text-xs py-1" /></td>
+                      <td className="py-2 px-4"><input value={editItem.tipo} onChange={(e) => setEditItem({ ...editItem, tipo: e.target.value })} className="input-neon w-full text-xs py-1" /></td>
+                      <td className="py-2 px-4 flex gap-1">
+                        <button onClick={saveEdit} className="text-primary hover:text-primary/80"><Check className="w-4 h-4" /></button>
+                        <button onClick={cancelEdit} className="text-destructive hover:text-destructive/80"><X className="w-4 h-4" /></button>
+                      </td>
+                    </>
+                  ) : (
+                    <>
+                      <td className="py-3 px-4 font-semibold">{item.nome}</td>
+                      <td className="py-3 px-4 text-muted-foreground font-mono text-xs">{item.codigo}</td>
+                      <td className="py-3 px-4">
+                        <span className={`px-2 py-1 rounded-full text-xs font-bold ${
+                          item.quantidade === 0
+                            ? "bg-destructive/20 text-destructive"
+                            : item.quantidade <= 5
+                            ? "bg-neon-amber/20 text-neon-amber"
+                            : "bg-primary/10 text-primary"
+                        }`}>
+                          {item.quantidade}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4 text-muted-foreground">{item.tipo}</td>
+                      <td className="py-3 px-4">
+                        <button onClick={() => startEdit(item)} className="text-muted-foreground hover:text-primary transition-colors">
+                          <Pencil className="w-4 h-4" />
+                        </button>
+                      </td>
+                    </>
+                  )}
                 </tr>
               ))}
             </tbody>

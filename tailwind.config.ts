@@ -52,10 +52,13 @@ export default {
           foreground: "hsl(var(--card-foreground))",
         },
         neon: {
-          cyan: "hsl(var(--neon-cyan))",
-          magenta: "hsl(var(--neon-magenta))",
-          red: "hsl(var(--neon-red))",
           green: "hsl(var(--neon-green))",
+          emerald: "hsl(var(--neon-emerald))",
+          red: "hsl(var(--neon-red))",
+          amber: "hsl(var(--neon-amber))",
+          // Legacy aliases
+          cyan: "hsl(var(--neon-green))",
+          magenta: "hsl(var(--neon-emerald))",
         },
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
@@ -87,8 +90,12 @@ export default {
           "50%": { opacity: "0.7" },
         },
         "glow-breathe": {
-          "0%, 100%": { boxShadow: "0 0 10px hsl(180 100% 50% / 0.3), 0 0 30px hsl(180 100% 50% / 0.1)" },
-          "50%": { boxShadow: "0 0 15px hsl(180 100% 50% / 0.5), 0 0 40px hsl(180 100% 50% / 0.2)" },
+          "0%, 100%": { boxShadow: "0 0 10px hsl(135 100% 50% / 0.3), 0 0 30px hsl(135 100% 50% / 0.1)" },
+          "50%": { boxShadow: "0 0 15px hsl(135 100% 50% / 0.5), 0 0 40px hsl(135 100% 50% / 0.2)" },
+        },
+        "matrix-rain": {
+          "0%": { transform: "translateY(-100%)", opacity: "1" },
+          "100%": { transform: "translateY(100vh)", opacity: "0" },
         },
       },
       animation: {

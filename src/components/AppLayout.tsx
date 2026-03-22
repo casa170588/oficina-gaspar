@@ -1,7 +1,9 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate, useLocation, Outlet } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { LayoutDashboard, FileText, Package, Users, LogOut } from "lucide-react";
+import { LayoutDashboard, FileText, Package, Users, LogOut, Menu, X, User } from "lucide-react";
+import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 
 const navItems = [
   { path: "/dashboard", label: "Painel", icon: LayoutDashboard },
@@ -14,6 +16,7 @@ const AppLayout = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const [sidebarOpen, setSidebarOpen] = useState(true);
 
   const handleLogout = () => {
     logout();
@@ -21,69 +24,100 @@ const AppLayout = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <header className="border-b border-border/50 bg-card/80 backdrop-blur-md sticky top-0 z-50">
-        <div className="container flex items-center justify-between h-16 px-4">
-          <h1 className="font-display text-xl font-bold text-primary text-glow-cyan">OFICINA-BLU</h1>
-
-          <nav className="hidden md:flex items-center gap-1">
-            {navItems.map((item) => {
-              const Icon = item.icon;
-              const active = location.pathname === item.path;
-              return (
-                <button
-                  key={item.path}
-                  onClick={() => navigate(item.path)}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-300 uppercase tracking-wider ${
-                    active
-                      ? "bg-primary/10 text-primary glow-cyan"
-                      : "text-muted-foreground hover:text-foreground hover:bg-muted"
-                  }`}
-                >
-                  <Icon className="w-4 h-4" />
-                  {item.label}
-                </button>
-              );
-            })}
-          </nav>
-
-          <div className="flex items-center gap-4">
-            <div className="hidden sm:block text-right">
-              <p className="text-xs text-muted-foreground uppercase tracking-wider">Logado como</p>
-              <p className="text-sm font-semibold text-primary text-glow-cyan">
-                {user?.name} <span className="text-secondary">({user?.level})</span>
-              </p>
+    <div className="min-h-screen flex">
+      {/* Sidebar */}
+      <AnimatePresence>
+        {sidebarOpen && (
+          <motion.aside
+            initial={{ x: -280 }}
+            animate={{ x: 0 }}
+            exit={{ x: -280 }}
+            transition={{ type: "spring", damping: 25, stiffness: 200 }}
+            className="fixed md:sticky top-0 left-0 z-50 h-screen w-64 bg-sidebar border-r border-sidebar-border flex flex-col"
+          >
+            {/* User Profile Section */}
+            <div className="p-5 border-b border-sidebar-border">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-full bg-primary/10 border-2 border-primary/50 flex items-center justify-center glow-green overflow-hidden">
+                  {user?.avatar ? (
+                    <img src={user.avatar} alt={user?.name} className="w-full h-full object-cover" />
+                  ) : (
+                    <User className="w-6 h-6 text-primary" />
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-bold text-foreground truncate">{user?.name}</p>
+                  <p className="text-xs text-primary font-semibold uppercase tracking-wider">{user?.level}</p>
+                </div>
+              </div>
             </div>
-            <Button variant="ghost" size="icon" onClick={handleLogout}>
-              <LogOut className="w-4 h-4" />
-            </Button>
-          </div>
-        </div>
 
-        {/* Mobile nav */}
-        <div className="md:hidden flex border-t border-border/30 overflow-x-auto">
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            const active = location.pathname === item.path;
-            return (
+            {/* Logo */}
+            <div className="px-5 py-4">
+              <h1 className="font-display text-lg font-bold text-primary text-glow-green tracking-widest">OFICINA-BLU</h1>
+            </div>
+
+            {/* Navigation */}
+            <nav className="flex-1 px-3 space-y-1">
+              {navItems.map((item) => {
+                const Icon = item.icon;
+                const active = location.pathname === item.path;
+                return (
+                  <button
+                    key={item.path}
+                    onClick={() => {
+                      navigate(item.path);
+                      if (window.innerWidth < 768) setSidebarOpen(false);
+                    }}
+                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-semibold transition-all duration-300 uppercase tracking-wider ${
+                      active
+                        ? "bg-primary/10 text-primary glow-green"
+                        : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                    }`}
+                  >
+                    <Icon className="w-4 h-4" />
+                    {item.label}
+                  </button>
+                );
+              })}
+            </nav>
+
+            {/* Logout */}
+            <div className="p-3 border-t border-sidebar-border">
               <button
-                key={item.path}
-                onClick={() => navigate(item.path)}
-                className={`flex-1 flex flex-col items-center gap-1 py-2 text-xs font-semibold transition-all ${
-                  active ? "text-primary" : "text-muted-foreground"
-                }`}
+                onClick={handleLogout}
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-semibold text-destructive hover:bg-destructive/10 transition-all duration-300 uppercase tracking-wider"
               >
-                <Icon className="w-4 h-4" />
-                {item.label}
+                <LogOut className="w-4 h-4" />
+                Sair
               </button>
-            );
-          })}
-        </div>
-      </header>
+            </div>
+          </motion.aside>
+        )}
+      </AnimatePresence>
 
-      <main className="flex-1 container px-4 py-6">
-        <Outlet />
-      </main>
+      {/* Mobile overlay */}
+      {sidebarOpen && (
+        <div className="fixed inset-0 bg-background/60 backdrop-blur-sm z-40 md:hidden" onClick={() => setSidebarOpen(false)} />
+      )}
+
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col min-h-screen">
+        <header className="border-b border-border/50 bg-card/80 backdrop-blur-md sticky top-0 z-30 h-14 flex items-center px-4">
+          <button onClick={() => setSidebarOpen(!sidebarOpen)} className="p-2 rounded-lg hover:bg-muted transition-colors text-muted-foreground hover:text-foreground">
+            {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+          </button>
+          <div className="ml-auto flex items-center gap-3">
+            <p className="text-xs text-muted-foreground uppercase tracking-wider hidden sm:block">
+              Logado como <span className="text-primary font-bold text-glow-green">{user?.name}</span>
+            </p>
+          </div>
+        </header>
+
+        <main className="flex-1 p-4 md:p-6 overflow-y-auto">
+          <Outlet />
+        </main>
+      </div>
     </div>
   );
 };

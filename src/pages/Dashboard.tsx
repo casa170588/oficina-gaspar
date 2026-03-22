@@ -3,9 +3,9 @@ import { Wrench, AlertTriangle, Users, TrendingUp } from "lucide-react";
 
 const cards = [
   { title: "Total Serviços Mês", value: "47", icon: Wrench, color: "text-primary" },
-  { title: "Alertas de Estoque", value: "3", icon: AlertTriangle, color: "text-secondary" },
-  { title: "Técnicos Online", value: "5", icon: Users, color: "text-neon-green" },
-  { title: "Receita Mensal", value: "R$ 28.500", icon: TrendingUp, color: "text-primary" },
+  { title: "Alertas de Estoque", value: "3", icon: AlertTriangle, color: "text-destructive" },
+  { title: "Técnicos Online", value: "5", icon: Users, color: "text-primary" },
+  { title: "O.S. Abertas", value: "12", icon: TrendingUp, color: "text-secondary" },
 ];
 
 const recentOS = [
@@ -17,7 +17,7 @@ const recentOS = [
 const Dashboard = () => {
   return (
     <div className="space-y-6">
-      <h2 className="font-display text-2xl font-bold text-glow-cyan">PAINEL DE CONTROLE</h2>
+      <h2 className="font-display text-2xl font-bold text-glow-green">PAINEL DE CONTROLE</h2>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {cards.map((card, i) => {
@@ -65,9 +65,9 @@ const Dashboard = () => {
                   <td className="py-3 px-2">{os.tecnico}</td>
                   <td className="py-3 px-2">
                     <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                      os.status === "Concluída" ? "bg-neon-green/10 text-neon-green" :
-                      os.status === "Em andamento" ? "bg-primary/10 text-primary" :
-                      "bg-secondary/10 text-secondary"
+                      os.status === "Concluída" ? "bg-primary/10 text-primary" :
+                      os.status === "Em andamento" ? "bg-secondary/10 text-secondary" :
+                      "bg-neon-amber/10 text-neon-amber"
                     }`}>
                       {os.status}
                     </span>
