@@ -1,10 +1,10 @@
 import { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { Camera, FileDown, Plus, Trash2, ImageIcon } from "lucide-react";
+import { Camera, FileDown, Plus, Trash2, ImageIcon, Search, AlertTriangle, Radar } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
-import { initialItems } from "@/data/pecas";
+import { initialItems, type ItemEstoque } from "@/data/pecas";
 import jsPDF from "jspdf";
 
 interface PecaUsada {
@@ -13,11 +13,12 @@ interface PecaUsada {
   quantidade: number;
 }
 
-const OSVeiculo = () => {
+const OSRastreamento = () => {
   const { user } = useAuth();
   const [placa, setPlaca] = useState("");
   const [frota, setFrota] = useState("");
   const [descricao, setDescricao] = useState("");
+  const [estoque, setEstoque] = useState<ItemEstoque[]>(initialItems);
   const [pecasUsadas, setPecasUsadas] = useState<PecaUsada[]>([]);
   const [showEstoqueAlert, setShowEstoqueAlert] = useState(false);
   const [buscaPeca, setBuscaPeca] = useState("");
@@ -27,32 +28,42 @@ const OSVeiculo = () => {
   const inputFotoNovaRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
-  const PECAS_DISPONIVEIS = initialItems;
+  // FILTRO INTELIGENTE: apenas peças tipo "Rastreamento"
+  const pecasRastreamento = estoque.filter((p) => p.tipo === "Rastreamento");
 
-  const pecasFiltradas = PECAS_DISPONIVEIS.filter(
+  const pecasFiltradas = pecasRastreamento.filter(
     (p) =>
       p.nome.toLowerCase().includes(buscaPeca.toLowerCase()) ||
       p.codigo.toLowerCase().includes(buscaPeca.toLowerCase())
   );
 
-  const addPeca = (nome: string, codigo: string) => {
-    const peca = PECAS_DISPONIVEIS.find((p) => p.codigo === codigo);
-    if (!peca) return;
+  const addPeca = (peca: ItemEstoque) => {
     if (peca.quantidade <= 0) {
       setShowEstoqueAlert(true);
       setTimeout(() => setShowEstoqueAlert(false), 3000);
       return;
     }
-    const existing = pecasUsadas.find((p) => p.codigo === codigo);
+
+    setEstoque((prev) =>
+      prev.map((p) => (p.id === peca.id ? { ...p, quantidade: p.quantidade - 1 } : p))
+    );
+
+    const existing = pecasUsadas.find((p) => p.codigo === peca.codigo);
     if (existing) {
-      setPecasUsadas(pecasUsadas.map((p) => (p.codigo === codigo ? { ...p, quantidade: p.quantidade + 1 } : p)));
+      setPecasUsadas(pecasUsadas.map((p) => (p.codigo === peca.codigo ? { ...p, quantidade: p.quantidade + 1 } : p)));
     } else {
-      setPecasUsadas([...pecasUsadas, { nome, codigo, quantidade: 1 }]);
+      setPecasUsadas([...pecasUsadas, { nome: peca.nome, codigo: peca.codigo, quantidade: 1 }]);
     }
-    toast({ title: `${nome} adicionada` });
+    toast({ title: `${peca.nome} adicionada` });
   };
 
   const removePeca = (codigo: string) => {
+    const peca = pecasUsadas.find((p) => p.codigo === codigo);
+    if (peca) {
+      setEstoque((prev) =>
+        prev.map((p) => (p.codigo === codigo ? { ...p, quantidade: p.quantidade + peca.quantidade } : p))
+      );
+    }
     setPecasUsadas(pecasUsadas.filter((p) => p.codigo !== codigo));
   };
 
@@ -76,14 +87,14 @@ const OSVeiculo = () => {
 
     const doc = new jsPDF();
     doc.setFontSize(18);
-    doc.text("OFICINA-BLU - Ordem de Serviço", 20, 20);
+    doc.text("OFICINA-BLU - O.S. Rastreamento", 20, 20);
     doc.setFontSize(12);
     doc.text(`Placa: ${placa}`, 20, 40);
     doc.text(`Frota: ${frota}`, 20, 50);
     doc.text(`Técnico: ${user?.name || ""}`, 20, 60);
     doc.text(`CPF: ${user?.cpf || ""}`, 20, 70);
     doc.text(`Descrição: ${descricao}`, 20, 80);
-    doc.text("Peças Utilizadas:", 20, 100);
+    doc.text("Peças de Rastreamento Utilizadas:", 20, 100);
     pecasUsadas.forEach((p, i) => {
       doc.text(`  - ${p.nome} [${p.codigo}] (x${p.quantidade})`, 20, 110 + i * 10);
     });
@@ -95,13 +106,16 @@ const OSVeiculo = () => {
     doc.text("Peça Nova:", 110, yFotos + 10);
     if (fotoPecaNova) doc.addImage(fotoPecaNova, "JPEG", 110, yFotos + 15, 70, 50);
 
-    doc.save(`OS_${placa || "sem-placa"}.pdf`);
+    doc.save(`OS_Rastreamento_${placa || "sem-placa"}.pdf`);
     toast({ title: "PDF gerado com sucesso!" });
   };
 
   return (
     <div className="space-y-6">
-      <h2 className="font-display text-2xl font-bold text-glow-green">O.S. VEÍCULO</h2>
+      <div className="flex items-center gap-3">
+        <Radar className="w-7 h-7 text-primary" />
+        <h2 className="font-display text-2xl font-bold text-glow-green">O.S. RASTREAMENTO</h2>
+      </div>
 
       {/* Stock alert popup */}
       <AnimatePresence>
@@ -113,7 +127,8 @@ const OSVeiculo = () => {
             className="fixed inset-0 z-50 flex items-center justify-center bg-background/60 backdrop-blur-sm"
           >
             <div className="bg-card border-2 border-primary rounded-xl p-8 glow-green text-center max-w-sm">
-              <p className="font-display text-xl font-bold text-primary mb-2">⚠ PEÇA FORA DE ESTOQUE!</p>
+              <AlertTriangle className="w-10 h-10 text-primary mx-auto mb-3" />
+              <p className="font-display text-xl font-bold text-primary mb-2">⚠ PEÇA DE RASTREAMENTO ESGOTADA!</p>
               <p className="text-muted-foreground">Esta peça não possui estoque disponível. O.S. bloqueada.</p>
             </div>
           </motion.div>
@@ -147,26 +162,35 @@ const OSVeiculo = () => {
 
         <div className="mt-4">
           <label className="block text-xs font-semibold text-primary mb-1 uppercase tracking-wider">Descrição do Serviço</label>
-          <textarea value={descricao} onChange={(e) => setDescricao(e.target.value)} className="input-neon w-full min-h-[80px] resize-none" placeholder="Descreva o serviço realizado..." />
+          <textarea value={descricao} onChange={(e) => setDescricao(e.target.value)} className="input-neon w-full min-h-[80px] resize-none" placeholder="Descreva o serviço de rastreamento realizado..." />
         </div>
       </motion.div>
 
-      {/* Parts selection - ALL types */}
+      {/* Parts selection - RASTREAMENTO ONLY */}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="card-floating p-6">
-        <h3 className="font-display text-lg font-bold text-primary mb-4">SELEÇÃO DE PEÇAS</h3>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="font-display text-lg font-bold text-primary">PEÇAS DE RASTREAMENTO</h3>
+          <span className="text-xs bg-primary/10 text-primary px-3 py-1 rounded-full font-semibold flex items-center gap-1">
+            <Radar className="w-3 h-3" />
+            Filtro: Rastreamento
+          </span>
+        </div>
 
-        <input
-          value={buscaPeca}
-          onChange={(e) => setBuscaPeca(e.target.value)}
-          className="input-neon w-full mb-4"
-          placeholder="Buscar por nome ou código de referência..."
-        />
+        <div className="relative mb-4">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <input
+            value={buscaPeca}
+            onChange={(e) => setBuscaPeca(e.target.value)}
+            className="input-neon w-full pl-10"
+            placeholder="Buscar peça por nome ou código de referência..."
+          />
+        </div>
 
         <div className="flex flex-wrap gap-2 mb-4">
           {pecasFiltradas.map((p) => (
             <button
               key={p.codigo}
-              onClick={() => addPeca(p.nome, p.codigo)}
+              onClick={() => addPeca(p)}
               className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all duration-300 ${
                 p.quantidade > 0
                   ? "border-primary/30 text-primary hover:bg-primary/10 hover:glow-green"
@@ -177,10 +201,14 @@ const OSVeiculo = () => {
               {p.nome} [{p.codigo}] ({p.quantidade})
             </button>
           ))}
+          {pecasFiltradas.length === 0 && (
+            <p className="text-sm text-muted-foreground">Nenhuma peça de rastreamento encontrada.</p>
+          )}
         </div>
 
         {pecasUsadas.length > 0 && (
           <div className="space-y-2">
+            <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Peças selecionadas</h4>
             {pecasUsadas.map((p) => (
               <div key={p.codigo} className="flex items-center justify-between bg-muted/30 rounded-lg px-4 py-2">
                 <span className="text-sm font-semibold">{p.nome} <span className="text-muted-foreground font-mono text-xs">[{p.codigo}]</span> <span className="text-muted-foreground">x{p.quantidade}</span></span>
@@ -243,4 +271,4 @@ const OSVeiculo = () => {
   );
 };
 
-export default OSVeiculo;
+export default OSRastreamento;
