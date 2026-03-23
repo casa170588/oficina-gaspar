@@ -1,100 +1,56 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { Search, Eye, Pencil, Trash2, X, FileText, Radar, ChevronDown } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { Search, Eye, Trash2, X, FileText, Radar, ChevronDown } from "lucide-react";
+import { useOrdensServico, type OrdemServico } from "@/hooks/useOrdensServico";
 
 type OSStatus = "Aberta" | "Em andamento" | "Concluída" | "Cancelada";
-
-interface OrdemServico {
-  id: number;
-  tipo: "Veículo" | "Rastreamento";
-  placa: string;
-  frota: string;
-  tecnico: string;
-  cpf: string;
-  descricao: string;
-  pecas: { nome: string; codigo: string; quantidade: number }[];
-  status: OSStatus;
-  data: string;
-}
-
 const STATUS_OPTIONS: OSStatus[] = ["Aberta", "Em andamento", "Concluída", "Cancelada"];
 
-const statusColor: Record<OSStatus, string> = {
+const statusColor: Record<string, string> = {
   "Aberta": "bg-neon-amber/20 text-neon-amber",
   "Em andamento": "bg-secondary/20 text-secondary",
   "Concluída": "bg-primary/20 text-primary",
   "Cancelada": "bg-destructive/20 text-destructive",
 };
 
-const initialOS: OrdemServico[] = [
-  {
-    id: 1, tipo: "Veículo", placa: "ABC-1D23", frota: "FR-012", tecnico: "João Técnico", cpf: "987.654.321-00",
-    descricao: "Troca de pastilha de freio dianteira", pecas: [{ nome: "Pastilha de Freio", codigo: "PF-002", quantidade: 2 }],
-    status: "Concluída", data: "2026-03-20",
-  },
-  {
-    id: 2, tipo: "Rastreamento", placa: "XYZ-4E56", frota: "FR-045", tecnico: "Carlos Silva", cpf: "123.456.789-00",
-    descricao: "Instalação de rastreador GPS", pecas: [{ nome: "Rastreador GPS Veicular", codigo: "RT-001", quantidade: 1 }, { nome: "Chicote Elétrico Rastreador", codigo: "RT-003", quantidade: 1 }],
-    status: "Em andamento", data: "2026-03-21",
-  },
-  {
-    id: 3, tipo: "Veículo", placa: "DEF-7G89", frota: "FR-078", tecnico: "Maria Santos", cpf: "111.222.333-44",
-    descricao: "Troca de óleo e filtro", pecas: [{ nome: "Filtro de Óleo", codigo: "FO-001", quantidade: 1 }, { nome: "Óleo Motor 5W30", codigo: "OM-008", quantidade: 4 }],
-    status: "Aberta", data: "2026-03-22",
-  },
-  {
-    id: 4, tipo: "Rastreamento", placa: "GHI-2J34", frota: "FR-099", tecnico: "Pedro Supervisor", cpf: "555.666.777-88",
-    descricao: "Substituição de antena de rastreamento", pecas: [{ nome: "Antena Rastreamento", codigo: "RT-002", quantidade: 1 }],
-    status: "Aberta", data: "2026-03-22",
-  },
-];
-
 const GerenciarOS = () => {
-  const [osList, setOsList] = useState<OrdemServico[]>(initialOS);
+  const { osList, loading, updateStatus, deleteOS } = useOrdensServico();
   const [search, setSearch] = useState("");
-  const [filterStatus, setFilterStatus] = useState<string>("");
-  const [filterTipo, setFilterTipo] = useState<string>("");
+  const [filterStatus, setFilterStatus] = useState("");
+  const [filterTipo, setFilterTipo] = useState("");
   const [viewOS, setViewOS] = useState<OrdemServico | null>(null);
-  const [editStatusId, setEditStatusId] = useState<number | null>(null);
-  const { toast } = useToast();
+  const [editStatusId, setEditStatusId] = useState<string | null>(null);
 
   const filtered = osList.filter((os) => {
     const matchSearch =
       os.placa.toLowerCase().includes(search.toLowerCase()) ||
       os.frota.toLowerCase().includes(search.toLowerCase()) ||
-      os.tecnico.toLowerCase().includes(search.toLowerCase());
+      os.tecnico_nome.toLowerCase().includes(search.toLowerCase());
     const matchStatus = filterStatus ? os.status === filterStatus : true;
     const matchTipo = filterTipo ? os.tipo === filterTipo : true;
     return matchSearch && matchStatus && matchTipo;
   });
 
-  const updateStatus = (id: number, status: OSStatus) => {
-    setOsList(osList.map((os) => (os.id === id ? { ...os, status } : os)));
+  const handleUpdateStatus = async (id: string, status: OSStatus) => {
+    await updateStatus(id, status);
     setEditStatusId(null);
-    toast({ title: `Status atualizado para "${status}"` });
   };
 
-  const deleteOS = (id: number) => {
-    setOsList(osList.filter((os) => os.id !== id));
-    toast({ title: "O.S. excluída" });
+  const handleDelete = async (id: string) => {
+    await deleteOS(id);
   };
+
+  if (loading) return <div className="text-center py-10 text-muted-foreground">Carregando O.S....</div>;
 
   return (
     <div className="space-y-6">
       <h2 className="font-display text-2xl font-bold text-glow-green">GERENCIAR O.S.</h2>
 
-      {/* Filters */}
       <div className="flex gap-3 flex-wrap">
         <div className="relative flex-1 min-w-[200px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="input-neon w-full pl-10"
-            placeholder="Buscar por placa, frota ou técnico..."
-          />
+          <input value={search} onChange={(e) => setSearch(e.target.value)} className="input-neon w-full pl-10" placeholder="Buscar por placa, frota ou técnico..." />
         </div>
         <select value={filterTipo} onChange={(e) => setFilterTipo(e.target.value)} className="input-neon min-w-[140px]">
           <option value="">Todos os Tipos</option>
@@ -107,7 +63,6 @@ const GerenciarOS = () => {
         </select>
       </div>
 
-      {/* OS Table */}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="card-floating overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
@@ -133,13 +88,13 @@ const GerenciarOS = () => {
                   </td>
                   <td className="py-3 px-4 font-bold font-mono">{os.placa}</td>
                   <td className="py-3 px-4 text-muted-foreground">{os.frota}</td>
-                  <td className="py-3 px-4">{os.tecnico}</td>
-                  <td className="py-3 px-4 text-muted-foreground text-xs">{os.data}</td>
+                  <td className="py-3 px-4">{os.tecnico_nome}</td>
+                  <td className="py-3 px-4 text-muted-foreground text-xs">{new Date(os.created_at).toLocaleDateString("pt-BR")}</td>
                   <td className="py-3 px-4">
                     {editStatusId === os.id ? (
                       <select
                         value={os.status}
-                        onChange={(e) => updateStatus(os.id, e.target.value as OSStatus)}
+                        onChange={(e) => handleUpdateStatus(os.id, e.target.value as OSStatus)}
                         onBlur={() => setEditStatusId(null)}
                         autoFocus
                         className="input-neon text-xs py-1 w-full"
@@ -147,7 +102,7 @@ const GerenciarOS = () => {
                         {STATUS_OPTIONS.map((s) => <option key={s} value={s}>{s}</option>)}
                       </select>
                     ) : (
-                      <button onClick={() => setEditStatusId(os.id)} className={`px-2 py-1 rounded-full text-xs font-bold ${statusColor[os.status]} cursor-pointer hover:opacity-80 flex items-center gap-1`}>
+                      <button onClick={() => setEditStatusId(os.id)} className={`px-2 py-1 rounded-full text-xs font-bold ${statusColor[os.status] || ""} cursor-pointer hover:opacity-80 flex items-center gap-1`}>
                         {os.status}
                         <ChevronDown className="w-3 h-3" />
                       </button>
@@ -158,7 +113,7 @@ const GerenciarOS = () => {
                       <button onClick={() => setViewOS(os)} className="text-muted-foreground hover:text-primary transition-colors" title="Visualizar">
                         <Eye className="w-4 h-4" />
                       </button>
-                      <button onClick={() => deleteOS(os.id)} className="text-muted-foreground hover:text-destructive transition-colors" title="Excluir">
+                      <button onClick={() => handleDelete(os.id)} className="text-muted-foreground hover:text-destructive transition-colors" title="Excluir">
                         <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
@@ -173,35 +128,18 @@ const GerenciarOS = () => {
         </div>
       </motion.div>
 
-      {/* View OS Modal */}
       <AnimatePresence>
         {viewOS && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-background/70 backdrop-blur-sm p-4"
-            onClick={() => setViewOS(null)}
-          >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="card-floating p-6 w-full max-w-lg max-h-[80vh] overflow-y-auto"
-              onClick={(e) => e.stopPropagation()}
-            >
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-center justify-center bg-background/70 backdrop-blur-sm p-4" onClick={() => setViewOS(null)}>
+            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="card-floating p-6 w-full max-w-lg max-h-[80vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
               <div className="flex items-center justify-between mb-4">
-                <h3 className="font-display text-lg font-bold text-primary">
-                  DETALHES DA O.S. #{viewOS.id}
-                </h3>
-                <button onClick={() => setViewOS(null)} className="text-muted-foreground hover:text-foreground">
-                  <X className="w-5 h-5" />
-                </button>
+                <h3 className="font-display text-lg font-bold text-primary">DETALHES DA O.S.</h3>
+                <button onClick={() => setViewOS(null)} className="text-muted-foreground hover:text-foreground"><X className="w-5 h-5" /></button>
               </div>
 
               <div className="space-y-3">
                 <div className="flex items-center gap-2">
-                  <span className={`px-2 py-1 rounded-full text-xs font-bold ${statusColor[viewOS.status]}`}>{viewOS.status}</span>
+                  <span className={`px-2 py-1 rounded-full text-xs font-bold ${statusColor[viewOS.status] || ""}`}>{viewOS.status}</span>
                   <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full font-semibold flex items-center gap-1">
                     {viewOS.tipo === "Rastreamento" ? <Radar className="w-3 h-3" /> : <FileText className="w-3 h-3" />}
                     {viewOS.tipo}
@@ -219,15 +157,15 @@ const GerenciarOS = () => {
                   </div>
                   <div>
                     <span className="text-xs text-muted-foreground uppercase tracking-wider">Técnico</span>
-                    <p className="font-semibold">{viewOS.tecnico}</p>
+                    <p className="font-semibold">{viewOS.tecnico_nome}</p>
                   </div>
                   <div>
                     <span className="text-xs text-muted-foreground uppercase tracking-wider">CPF</span>
-                    <p className="font-mono text-xs">{viewOS.cpf}</p>
+                    <p className="font-mono text-xs">{viewOS.tecnico_cpf}</p>
                   </div>
                   <div className="col-span-2">
                     <span className="text-xs text-muted-foreground uppercase tracking-wider">Data</span>
-                    <p className="font-semibold">{viewOS.data}</p>
+                    <p className="font-semibold">{new Date(viewOS.created_at).toLocaleDateString("pt-BR")}</p>
                   </div>
                 </div>
 
@@ -236,17 +174,19 @@ const GerenciarOS = () => {
                   <p className="text-sm mt-1 bg-muted/30 rounded-lg p-3">{viewOS.descricao}</p>
                 </div>
 
-                <div>
-                  <span className="text-xs text-muted-foreground uppercase tracking-wider">Peças Utilizadas</span>
-                  <div className="space-y-1 mt-1">
-                    {viewOS.pecas.map((p) => (
-                      <div key={p.codigo} className="flex justify-between bg-muted/30 rounded-lg px-3 py-2 text-sm">
-                        <span className="font-semibold">{p.nome} <span className="text-muted-foreground font-mono text-xs">[{p.codigo}]</span></span>
-                        <span className="text-muted-foreground">x{p.quantidade}</span>
-                      </div>
-                    ))}
+                {viewOS.pecas.length > 0 && (
+                  <div>
+                    <span className="text-xs text-muted-foreground uppercase tracking-wider">Peças Utilizadas</span>
+                    <div className="space-y-1 mt-1">
+                      {viewOS.pecas.map((p) => (
+                        <div key={p.codigo} className="flex justify-between bg-muted/30 rounded-lg px-3 py-2 text-sm">
+                          <span className="font-semibold">{p.nome} <span className="text-muted-foreground font-mono text-xs">[{p.codigo}]</span></span>
+                          <span className="text-muted-foreground">x{p.quantidade}</span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
 
               <Button variant="outline" className="w-full mt-5" onClick={() => setViewOS(null)}>Fechar</Button>

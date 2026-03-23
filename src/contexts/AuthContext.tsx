@@ -1,4 +1,6 @@
-import React, { createContext, useContext, useState, ReactNode } from "react";
+import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import type { User as SupabaseUser } from "@supabase/supabase-js";
 
 interface User {
   id: string;
@@ -10,8 +12,11 @@ interface User {
 
 interface AuthContextType {
   user: User | null;
-  login: (username: string, password: string) => boolean;
+  supabaseUser: SupabaseUser | null;
+  login: (email: string, password: string) => Promise<boolean>;
+  signup: (email: string, password: string, profile: { nome: string; cpf: string; nivel: string }) => Promise<boolean>;
   logout: () => void;
+  loading: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -22,24 +27,92 @@ export const useAuth = () => {
   return ctx;
 };
 
-const MOCK_USERS = [
-  { id: "1", username: "admin", password: "admin123", name: "Carlos Silva", cpf: "123.456.789-00", level: "MASTER" },
-  { id: "2", username: "tecnico", password: "tec123", name: "João Técnico", cpf: "987.654.321-00", level: "TÉCNICO" },
-];
-
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [supabaseUser, setSupabaseUser] = useState<SupabaseUser | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const login = (username: string, password: string): boolean => {
-    const found = MOCK_USERS.find((u) => u.username === username && u.password === password);
-    if (found) {
-      setUser({ id: found.id, name: found.name, cpf: found.cpf, level: found.level });
-      return true;
+  const loadProfile = async (sUser: SupabaseUser) => {
+    const { data } = await supabase
+      .from("profiles")
+      .select("*")
+      .eq("user_id", sUser.id)
+      .maybeSingle();
+
+    if (data) {
+      setUser({
+        id: sUser.id,
+        name: data.nome,
+        cpf: data.cpf,
+        level: data.nivel,
+        avatar: data.avatar_url || undefined,
+      });
+    } else {
+      // Create default profile
+      const nome = sUser.email?.split("@")[0] || "Usuário";
+      await supabase.from("profiles").insert({
+        user_id: sUser.id,
+        nome,
+        cpf: "",
+        login: sUser.email || "",
+        nivel: "TÉCNICO",
+      });
+      setUser({ id: sUser.id, name: nome, cpf: "", level: "TÉCNICO" });
     }
-    return false;
   };
 
-  const logout = () => setUser(null);
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        setSupabaseUser(session.user);
+        loadProfile(session.user);
+      }
+      setLoading(false);
+    });
 
-  return <AuthContext.Provider value={{ user, login, logout }}>{children}</AuthContext.Provider>;
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        setSupabaseUser(session.user);
+        loadProfile(session.user);
+      } else {
+        setUser(null);
+        setSupabaseUser(null);
+      }
+      setLoading(false);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const login = async (email: string, password: string): Promise<boolean> => {
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    return !error;
+  };
+
+  const signup = async (email: string, password: string, profile: { nome: string; cpf: string; nivel: string }): Promise<boolean> => {
+    const { data, error } = await supabase.auth.signUp({ email, password });
+    if (error || !data.user) return false;
+
+    await supabase.from("profiles").insert({
+      user_id: data.user.id,
+      nome: profile.nome,
+      cpf: profile.cpf,
+      login: email,
+      nivel: profile.nivel,
+    });
+
+    return true;
+  };
+
+  const logout = () => {
+    supabase.auth.signOut();
+    setUser(null);
+    setSupabaseUser(null);
+  };
+
+  return (
+    <AuthContext.Provider value={{ user, supabaseUser, login, signup, logout, loading }}>
+      {children}
+    </AuthContext.Provider>
+  );
 };

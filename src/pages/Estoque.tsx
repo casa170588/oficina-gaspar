@@ -2,18 +2,17 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Plus, Search, AlertTriangle, Pencil, Check, X } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import { initialItems, TIPOS_PECA, type ItemEstoque } from "@/data/pecas";
+import { useEstoque, type ItemEstoque } from "@/hooks/useEstoque";
+import { TIPOS_PECA } from "@/data/pecas";
 
 const Estoque = () => {
-  const [items, setItems] = useState<ItemEstoque[]>(initialItems);
+  const { items, loading, addItem, updateItem } = useEstoque();
   const [search, setSearch] = useState("");
   const [filterTipo, setFilterTipo] = useState("");
   const [showAdd, setShowAdd] = useState(false);
-  const [editingId, setEditingId] = useState<number | null>(null);
-  const [editItem, setEditItem] = useState<ItemEstoque | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editData, setEditData] = useState<Partial<ItemEstoque>>({});
   const [newItem, setNewItem] = useState({ nome: "", codigo: "", quantidade: 0, tipo: "" });
-  const { toast } = useToast();
 
   const filtered = items.filter(
     (i) =>
@@ -24,31 +23,35 @@ const Estoque = () => {
 
   const lowStock = items.filter((i) => i.quantidade <= 2);
 
-  const handleAdd = () => {
+  const handleAdd = async () => {
     if (!newItem.nome || !newItem.codigo || !newItem.tipo) return;
-    setItems([...items, { ...newItem, id: Date.now() }]);
-    setNewItem({ nome: "", codigo: "", quantidade: 0, tipo: "" });
-    setShowAdd(false);
-    toast({ title: "Item adicionado ao estoque" });
+    const ok = await addItem(newItem);
+    if (ok) {
+      setNewItem({ nome: "", codigo: "", quantidade: 0, tipo: "" });
+      setShowAdd(false);
+    }
   };
 
   const startEdit = (item: ItemEstoque) => {
     setEditingId(item.id);
-    setEditItem({ ...item });
+    setEditData({ nome: item.nome, codigo: item.codigo, quantidade: item.quantidade, tipo: item.tipo });
   };
 
-  const saveEdit = () => {
-    if (!editItem) return;
-    setItems(items.map((i) => (i.id === editItem.id ? editItem : i)));
-    setEditingId(null);
-    setEditItem(null);
-    toast({ title: "Item atualizado" });
+  const saveEdit = async () => {
+    if (!editingId) return;
+    const ok = await updateItem(editingId, editData);
+    if (ok) {
+      setEditingId(null);
+      setEditData({});
+    }
   };
 
   const cancelEdit = () => {
     setEditingId(null);
-    setEditItem(null);
+    setEditData({});
   };
+
+  if (loading) return <div className="text-center py-10 text-muted-foreground">Carregando estoque...</div>;
 
   return (
     <div className="space-y-6">
@@ -79,22 +82,11 @@ const Estoque = () => {
       <div className="flex gap-3 flex-wrap">
         <div className="relative flex-1 min-w-[200px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="input-neon w-full pl-10"
-            placeholder="Buscar por nome ou código..."
-          />
+          <input value={search} onChange={(e) => setSearch(e.target.value)} className="input-neon w-full pl-10" placeholder="Buscar por nome ou código..." />
         </div>
-        <select
-          value={filterTipo}
-          onChange={(e) => setFilterTipo(e.target.value)}
-          className="input-neon min-w-[160px]"
-        >
+        <select value={filterTipo} onChange={(e) => setFilterTipo(e.target.value)} className="input-neon min-w-[160px]">
           <option value="">Todos os Tipos</option>
-          {TIPOS_PECA.map((t) => (
-            <option key={t} value={t}>{t}</option>
-          ))}
+          {TIPOS_PECA.map((t) => <option key={t} value={t}>{t}</option>)}
         </select>
       </div>
 
@@ -113,13 +105,13 @@ const Estoque = () => {
             <tbody>
               {filtered.map((item) => (
                 <tr key={item.id} className="border-b border-border/30 hover:bg-muted/20 transition-colors">
-                  {editingId === item.id && editItem ? (
+                  {editingId === item.id ? (
                     <>
-                      <td className="py-2 px-4"><input value={editItem.nome} onChange={(e) => setEditItem({ ...editItem, nome: e.target.value })} className="input-neon w-full text-xs py-1" /></td>
-                      <td className="py-2 px-4"><input value={editItem.codigo} onChange={(e) => setEditItem({ ...editItem, codigo: e.target.value })} className="input-neon w-full text-xs py-1 font-mono" /></td>
-                      <td className="py-2 px-4"><input type="number" value={editItem.quantidade} onChange={(e) => setEditItem({ ...editItem, quantidade: Number(e.target.value) })} className="input-neon w-20 text-xs py-1" /></td>
+                      <td className="py-2 px-4"><input value={editData.nome || ""} onChange={(e) => setEditData({ ...editData, nome: e.target.value })} className="input-neon w-full text-xs py-1" /></td>
+                      <td className="py-2 px-4"><input value={editData.codigo || ""} onChange={(e) => setEditData({ ...editData, codigo: e.target.value })} className="input-neon w-full text-xs py-1 font-mono" /></td>
+                      <td className="py-2 px-4"><input type="number" value={editData.quantidade ?? 0} onChange={(e) => setEditData({ ...editData, quantidade: Number(e.target.value) })} className="input-neon w-20 text-xs py-1" /></td>
                       <td className="py-2 px-4">
-                        <select value={editItem.tipo} onChange={(e) => setEditItem({ ...editItem, tipo: e.target.value })} className="input-neon w-full text-xs py-1">
+                        <select value={editData.tipo || ""} onChange={(e) => setEditData({ ...editData, tipo: e.target.value })} className="input-neon w-full text-xs py-1">
                           {TIPOS_PECA.map((t) => <option key={t} value={t}>{t}</option>)}
                         </select>
                       </td>
@@ -134,19 +126,13 @@ const Estoque = () => {
                       <td className="py-3 px-4 text-muted-foreground font-mono text-xs">{item.codigo}</td>
                       <td className="py-3 px-4">
                         <span className={`px-2 py-1 rounded-full text-xs font-bold ${
-                          item.quantidade === 0
-                            ? "bg-destructive/20 text-destructive"
-                            : item.quantidade <= 5
-                            ? "bg-neon-amber/20 text-neon-amber"
+                          item.quantidade === 0 ? "bg-destructive/20 text-destructive"
+                            : item.quantidade <= 5 ? "bg-neon-amber/20 text-neon-amber"
                             : "bg-primary/10 text-primary"
-                        }`}>
-                          {item.quantidade}
-                        </span>
+                        }`}>{item.quantidade}</span>
                       </td>
                       <td className="py-3 px-4">
-                        <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-primary/10 text-primary">
-                          {item.tipo}
-                        </span>
+                        <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-primary/10 text-primary">{item.tipo}</span>
                       </td>
                       <td className="py-3 px-4">
                         <button onClick={() => startEdit(item)} className="text-muted-foreground hover:text-primary transition-colors">
@@ -165,23 +151,10 @@ const Estoque = () => {
         </div>
       </motion.div>
 
-      {/* Add Item Modal */}
       <AnimatePresence>
         {showAdd && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-background/70 backdrop-blur-sm p-4"
-            onClick={() => setShowAdd(false)}
-          >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="card-floating p-6 w-full max-w-md"
-              onClick={(e) => e.stopPropagation()}
-            >
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-center justify-center bg-background/70 backdrop-blur-sm p-4" onClick={() => setShowAdd(false)}>
+            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="card-floating p-6 w-full max-w-md" onClick={(e) => e.stopPropagation()}>
               <h3 className="font-display text-lg font-bold text-primary mb-4">NOVO ITEM</h3>
               <div className="space-y-3">
                 <input value={newItem.nome} onChange={(e) => setNewItem({ ...newItem, nome: e.target.value })} className="input-neon w-full" placeholder="Nome da peça" />

@@ -14,7 +14,143 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      ordens_servico: {
+        Row: {
+          created_at: string
+          descricao: string
+          foto_peca_antiga: string | null
+          foto_peca_nova: string | null
+          frota: string
+          id: string
+          placa: string
+          status: string
+          tecnico_cpf: string
+          tecnico_nome: string
+          tipo: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          descricao?: string
+          foto_peca_antiga?: string | null
+          foto_peca_nova?: string | null
+          frota?: string
+          id?: string
+          placa?: string
+          status?: string
+          tecnico_cpf?: string
+          tecnico_nome?: string
+          tipo?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          descricao?: string
+          foto_peca_antiga?: string | null
+          foto_peca_nova?: string | null
+          frota?: string
+          id?: string
+          placa?: string
+          status?: string
+          tecnico_cpf?: string
+          tecnico_nome?: string
+          tipo?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      os_pecas: {
+        Row: {
+          id: string
+          os_id: string
+          peca_codigo: string
+          peca_nome: string
+          quantidade: number
+        }
+        Insert: {
+          id?: string
+          os_id: string
+          peca_codigo: string
+          peca_nome: string
+          quantidade?: number
+        }
+        Update: {
+          id?: string
+          os_id?: string
+          peca_codigo?: string
+          peca_nome?: string
+          quantidade?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "os_pecas_os_id_fkey"
+            columns: ["os_id"]
+            isOneToOne: false
+            referencedRelation: "ordens_servico"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pecas: {
+        Row: {
+          codigo: string
+          created_at: string
+          id: string
+          nome: string
+          quantidade: number
+          tipo: string
+        }
+        Insert: {
+          codigo: string
+          created_at?: string
+          id?: string
+          nome: string
+          quantidade?: number
+          tipo?: string
+        }
+        Update: {
+          codigo?: string
+          created_at?: string
+          id?: string
+          nome?: string
+          quantidade?: number
+          tipo?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          cpf: string
+          created_at: string
+          id: string
+          login: string
+          nivel: string
+          nome: string
+          user_id: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          cpf?: string
+          created_at?: string
+          id?: string
+          login?: string
+          nivel?: string
+          nome: string
+          user_id?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          cpf?: string
+          created_at?: string
+          id?: string
+          login?: string
+          nivel?: string
+          nome?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
