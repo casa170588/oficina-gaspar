@@ -1,20 +1,24 @@
 import { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { Camera, FileDown, Plus, Trash2, ImageIcon } from "lucide-react";
+import { Camera, FileDown, Plus, Trash2, ImageIcon, Save } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
-import { initialItems } from "@/data/pecas";
+import { useEstoque } from "@/hooks/useEstoque";
+import { useOrdensServico } from "@/hooks/useOrdensServico";
 import jsPDF from "jspdf";
 
 interface PecaUsada {
+  id: string;
   nome: string;
   codigo: string;
   quantidade: number;
 }
 
 const OSVeiculo = () => {
-  const { user } = useAuth();
+  const { user, supabaseUser } = useAuth();
+  const { items, decrementStock, incrementStock } = useEstoque();
+  const { createOS } = useOrdensServico();
   const [placa, setPlaca] = useState("");
   const [frota, setFrota] = useState("");
   const [descricao, setDescricao] = useState("");
@@ -27,33 +31,30 @@ const OSVeiculo = () => {
   const inputFotoNovaRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
-  const PECAS_DISPONIVEIS = initialItems;
-
-  const pecasFiltradas = PECAS_DISPONIVEIS.filter(
-    (p) =>
-      p.nome.toLowerCase().includes(buscaPeca.toLowerCase()) ||
-      p.codigo.toLowerCase().includes(buscaPeca.toLowerCase())
+  const pecasFiltradas = items.filter(
+    (p) => p.nome.toLowerCase().includes(buscaPeca.toLowerCase()) || p.codigo.toLowerCase().includes(buscaPeca.toLowerCase())
   );
 
-  const addPeca = (nome: string, codigo: string) => {
-    const peca = PECAS_DISPONIVEIS.find((p) => p.codigo === codigo);
-    if (!peca) return;
+  const addPeca = async (peca: typeof items[0]) => {
     if (peca.quantidade <= 0) {
       setShowEstoqueAlert(true);
       setTimeout(() => setShowEstoqueAlert(false), 3000);
       return;
     }
-    const existing = pecasUsadas.find((p) => p.codigo === codigo);
+    const ok = await decrementStock(peca.id);
+    if (!ok) return;
+    const existing = pecasUsadas.find((p) => p.codigo === peca.codigo);
     if (existing) {
-      setPecasUsadas(pecasUsadas.map((p) => (p.codigo === codigo ? { ...p, quantidade: p.quantidade + 1 } : p)));
+      setPecasUsadas(pecasUsadas.map((p) => (p.codigo === peca.codigo ? { ...p, quantidade: p.quantidade + 1 } : p)));
     } else {
-      setPecasUsadas([...pecasUsadas, { nome, codigo, quantidade: 1 }]);
+      setPecasUsadas([...pecasUsadas, { id: peca.id, nome: peca.nome, codigo: peca.codigo, quantidade: 1 }]);
     }
-    toast({ title: `${nome} adicionada` });
+    toast({ title: `${peca.nome} adicionada` });
   };
 
-  const removePeca = (codigo: string) => {
-    setPecasUsadas(pecasUsadas.filter((p) => p.codigo !== codigo));
+  const removePeca = async (peca: PecaUsada) => {
+    await incrementStock(peca.id, peca.quantidade);
+    setPecasUsadas(pecasUsadas.filter((p) => p.codigo !== peca.codigo));
   };
 
   const handleFoto = (e: React.ChangeEvent<HTMLInputElement>, tipo: "antiga" | "nova") => {
@@ -68,12 +69,42 @@ const OSVeiculo = () => {
     }
   };
 
-  const gerarPDF = () => {
-    if (!fotoPecaAntiga || !fotoPecaNova) {
-      toast({ title: "Fotos obrigatórias!", description: "Adicione fotos da peça antiga e nova.", variant: "destructive" });
+  const salvarOS = async () => {
+    if (!placa || !frota) {
+      toast({ title: "Preencha placa e frota", variant: "destructive" });
       return;
     }
+    if (!fotoPecaAntiga || !fotoPecaNova) {
+      toast({ title: "Fotos obrigatórias!", variant: "destructive" });
+      return;
+    }
+    await createOS(
+      {
+        tipo: "Veículo",
+        placa,
+        frota,
+        tecnico_nome: user?.name || "",
+        tecnico_cpf: user?.cpf || "",
+        descricao,
+        foto_peca_antiga: fotoPecaAntiga,
+        foto_peca_nova: fotoPecaNova,
+        user_id: supabaseUser?.id || null,
+      },
+      pecasUsadas.map((p) => ({ nome: p.nome, codigo: p.codigo, quantidade: p.quantidade }))
+    );
+    setPlaca("");
+    setFrota("");
+    setDescricao("");
+    setPecasUsadas([]);
+    setFotoPecaAntiga(null);
+    setFotoPecaNova(null);
+  };
 
+  const gerarPDF = () => {
+    if (!fotoPecaAntiga || !fotoPecaNova) {
+      toast({ title: "Fotos obrigatórias!", variant: "destructive" });
+      return;
+    }
     const doc = new jsPDF();
     doc.setFontSize(18);
     doc.text("OFICINA-BLU - Ordem de Serviço", 20, 20);
@@ -87,14 +118,12 @@ const OSVeiculo = () => {
     pecasUsadas.forEach((p, i) => {
       doc.text(`  - ${p.nome} [${p.codigo}] (x${p.quantidade})`, 20, 110 + i * 10);
     });
-
     const yFotos = 120 + pecasUsadas.length * 10;
     doc.text("Fotos:", 20, yFotos);
     doc.text("Peça Antiga:", 20, yFotos + 10);
     if (fotoPecaAntiga) doc.addImage(fotoPecaAntiga, "JPEG", 20, yFotos + 15, 70, 50);
     doc.text("Peça Nova:", 110, yFotos + 10);
     if (fotoPecaNova) doc.addImage(fotoPecaNova, "JPEG", 110, yFotos + 15, 70, 50);
-
     doc.save(`OS_${placa || "sem-placa"}.pdf`);
     toast({ title: "PDF gerado com sucesso!" });
   };
@@ -103,15 +132,9 @@ const OSVeiculo = () => {
     <div className="space-y-6">
       <h2 className="font-display text-2xl font-bold text-glow-green">O.S. VEÍCULO</h2>
 
-      {/* Stock alert popup */}
       <AnimatePresence>
         {showEstoqueAlert && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.9 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-background/60 backdrop-blur-sm"
-          >
+          <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} className="fixed inset-0 z-50 flex items-center justify-center bg-background/60 backdrop-blur-sm">
             <div className="bg-card border-2 border-primary rounded-xl p-8 glow-green text-center max-w-sm">
               <p className="font-display text-xl font-bold text-primary mb-2">⚠ PEÇA FORA DE ESTOQUE!</p>
               <p className="text-muted-foreground">Esta peça não possui estoque disponível. O.S. bloqueada.</p>
@@ -120,7 +143,6 @@ const OSVeiculo = () => {
         )}
       </AnimatePresence>
 
-      {/* Vehicle Data */}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="card-floating p-6">
         <h3 className="font-display text-lg font-bold text-primary mb-4">IDENTIFICAÇÃO</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -133,7 +155,6 @@ const OSVeiculo = () => {
             <input value={frota} onChange={(e) => setFrota(e.target.value)} className="input-neon w-full" placeholder="FR-001" />
           </div>
         </div>
-
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
           <div>
             <label className="block text-xs font-semibold text-primary mb-1 uppercase tracking-wider">Técnico Responsável</label>
@@ -144,100 +165,62 @@ const OSVeiculo = () => {
             <div className="input-neon w-full opacity-70 cursor-not-allowed">{user?.cpf || "—"}</div>
           </div>
         </div>
-
         <div className="mt-4">
           <label className="block text-xs font-semibold text-primary mb-1 uppercase tracking-wider">Descrição do Serviço</label>
           <textarea value={descricao} onChange={(e) => setDescricao(e.target.value)} className="input-neon w-full min-h-[80px] resize-none" placeholder="Descreva o serviço realizado..." />
         </div>
       </motion.div>
 
-      {/* Parts selection - ALL types */}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="card-floating p-6">
         <h3 className="font-display text-lg font-bold text-primary mb-4">SELEÇÃO DE PEÇAS</h3>
-
-        <input
-          value={buscaPeca}
-          onChange={(e) => setBuscaPeca(e.target.value)}
-          className="input-neon w-full mb-4"
-          placeholder="Buscar por nome ou código de referência..."
-        />
-
+        <input value={buscaPeca} onChange={(e) => setBuscaPeca(e.target.value)} className="input-neon w-full mb-4" placeholder="Buscar por nome ou código de referência..." />
         <div className="flex flex-wrap gap-2 mb-4">
           {pecasFiltradas.map((p) => (
-            <button
-              key={p.codigo}
-              onClick={() => addPeca(p.nome, p.codigo)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all duration-300 ${
-                p.quantidade > 0
-                  ? "border-primary/30 text-primary hover:bg-primary/10 hover:glow-green"
-                  : "border-destructive/30 text-destructive opacity-50 cursor-not-allowed"
-              }`}
-            >
+            <button key={p.codigo} onClick={() => addPeca(p)} className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all duration-300 ${p.quantidade > 0 ? "border-primary/30 text-primary hover:bg-primary/10" : "border-destructive/30 text-destructive opacity-50 cursor-not-allowed"}`}>
               <Plus className="w-3 h-3 inline mr-1" />
               {p.nome} [{p.codigo}] ({p.quantidade})
             </button>
           ))}
         </div>
-
         {pecasUsadas.length > 0 && (
           <div className="space-y-2">
             {pecasUsadas.map((p) => (
               <div key={p.codigo} className="flex items-center justify-between bg-muted/30 rounded-lg px-4 py-2">
                 <span className="text-sm font-semibold">{p.nome} <span className="text-muted-foreground font-mono text-xs">[{p.codigo}]</span> <span className="text-muted-foreground">x{p.quantidade}</span></span>
-                <button onClick={() => removePeca(p.codigo)} className="text-destructive hover:text-destructive/80">
-                  <Trash2 className="w-4 h-4" />
-                </button>
+                <button onClick={() => removePeca(p)} className="text-destructive hover:text-destructive/80"><Trash2 className="w-4 h-4" /></button>
               </div>
             ))}
           </div>
         )}
       </motion.div>
 
-      {/* Dual Photo System */}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="card-floating p-6">
         <h3 className="font-display text-lg font-bold text-primary mb-4">PROVA VISUAL (OBRIGATÓRIO)</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <input ref={inputFotoAntigaRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => handleFoto(e, "antiga")} />
-            <Button variant="neonCyan" className="w-full mb-3" onClick={() => inputFotoAntigaRef.current?.click()}>
-              <Camera className="w-4 h-4" />
-              FOTO: PEÇA ANTIGA
-            </Button>
+            <Button variant="neonCyan" className="w-full mb-3" onClick={() => inputFotoAntigaRef.current?.click()}><Camera className="w-4 h-4" />FOTO: PEÇA ANTIGA</Button>
             {fotoPecaAntiga ? (
-              <div className="rounded-lg overflow-hidden border border-border/50 aspect-video">
-                <img src={fotoPecaAntiga} alt="Peça antiga" className="w-full h-full object-cover" />
-              </div>
+              <div className="rounded-lg overflow-hidden border border-border/50 aspect-video"><img src={fotoPecaAntiga} alt="Peça antiga" className="w-full h-full object-cover" /></div>
             ) : (
-              <div className="rounded-lg border border-dashed border-border/50 aspect-video flex items-center justify-center text-muted-foreground">
-                <ImageIcon className="w-8 h-8" />
-              </div>
+              <div className="rounded-lg border border-dashed border-border/50 aspect-video flex items-center justify-center text-muted-foreground"><ImageIcon className="w-8 h-8" /></div>
             )}
           </div>
           <div>
             <input ref={inputFotoNovaRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => handleFoto(e, "nova")} />
-            <Button variant="neonCyan" className="w-full mb-3" onClick={() => inputFotoNovaRef.current?.click()}>
-              <Camera className="w-4 h-4" />
-              FOTO: PEÇA NOVA
-            </Button>
+            <Button variant="neonCyan" className="w-full mb-3" onClick={() => inputFotoNovaRef.current?.click()}><Camera className="w-4 h-4" />FOTO: PEÇA NOVA</Button>
             {fotoPecaNova ? (
-              <div className="rounded-lg overflow-hidden border border-border/50 aspect-video">
-                <img src={fotoPecaNova} alt="Peça nova" className="w-full h-full object-cover" />
-              </div>
+              <div className="rounded-lg overflow-hidden border border-border/50 aspect-video"><img src={fotoPecaNova} alt="Peça nova" className="w-full h-full object-cover" /></div>
             ) : (
-              <div className="rounded-lg border border-dashed border-border/50 aspect-video flex items-center justify-center text-muted-foreground">
-                <ImageIcon className="w-8 h-8" />
-              </div>
+              <div className="rounded-lg border border-dashed border-border/50 aspect-video flex items-center justify-center text-muted-foreground"><ImageIcon className="w-8 h-8" /></div>
             )}
           </div>
         </div>
       </motion.div>
 
-      {/* Actions */}
       <div className="flex flex-wrap gap-3">
-        <Button variant="neonMagenta" size="lg" onClick={gerarPDF}>
-          <FileDown className="w-4 h-4" />
-          Gerar PDF de Serviço
-        </Button>
+        <Button variant="neonCyan" size="lg" onClick={salvarOS}><Save className="w-4 h-4" />Salvar O.S.</Button>
+        <Button variant="neonMagenta" size="lg" onClick={gerarPDF}><FileDown className="w-4 h-4" />Gerar PDF de Serviço</Button>
       </div>
     </div>
   );
