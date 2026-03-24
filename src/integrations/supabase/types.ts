@@ -118,6 +118,30 @@ export type Database = {
         }
         Relationships: []
       }
+      pneus: {
+        Row: {
+          created_at: string
+          id: string
+          medida: string
+          quantidade: number
+          tipo: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          medida: string
+          quantidade?: number
+          tipo?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          medida?: string
+          quantidade?: number
+          tipo?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null

@@ -130,5 +130,17 @@ export function useOrdensServico() {
     return true;
   };
 
-  return { osList, loading, fetchOS, createOS, updateStatus, deleteOS };
+  const updateOS = async (id: string, updates: Partial<OrdemServico>) => {
+    const { pecas, ...dbUpdates } = updates as any;
+    const { error } = await supabase.from("ordens_servico").update(dbUpdates).eq("id", id);
+    if (error) {
+      toast({ title: "Erro ao atualizar O.S.", description: error.message, variant: "destructive" });
+      return false;
+    }
+    await fetchOS();
+    toast({ title: "O.S. atualizada" });
+    return true;
+  };
+
+  return { osList, loading, fetchOS, createOS, updateStatus, updateOS, deleteOS };
 }

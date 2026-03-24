@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { Search, Eye, Trash2, X, FileText, Radar, ChevronDown } from "lucide-react";
+import { Search, Eye, Trash2, X, FileText, Radar, ChevronDown, Pencil, Check } from "lucide-react";
 import { useOrdensServico, type OrdemServico } from "@/hooks/useOrdensServico";
 
 type OSStatus = "Aberta" | "Em andamento" | "Concluída" | "Cancelada";
@@ -15,12 +15,14 @@ const statusColor: Record<string, string> = {
 };
 
 const GerenciarOS = () => {
-  const { osList, loading, updateStatus, deleteOS } = useOrdensServico();
+  const { osList, loading, updateStatus, updateOS, deleteOS } = useOrdensServico();
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
   const [filterTipo, setFilterTipo] = useState("");
   const [viewOS, setViewOS] = useState<OrdemServico | null>(null);
   const [editStatusId, setEditStatusId] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editData, setEditData] = useState<Partial<OrdemServico>>({});
 
   const filtered = osList.filter((os) => {
     const matchSearch =
@@ -39,6 +41,33 @@ const GerenciarOS = () => {
 
   const handleDelete = async (id: string) => {
     await deleteOS(id);
+  };
+
+  const startEdit = (os: OrdemServico) => {
+    setEditingId(os.id);
+    setEditData({
+      placa: os.placa,
+      frota: os.frota,
+      tecnico_nome: os.tecnico_nome,
+      tecnico_cpf: os.tecnico_cpf,
+      descricao: os.descricao,
+      tipo: os.tipo,
+      status: os.status,
+    });
+  };
+
+  const saveEdit = async () => {
+    if (!editingId) return;
+    const ok = await updateOS(editingId, editData);
+    if (ok) {
+      setEditingId(null);
+      setEditData({});
+    }
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setEditData({});
   };
 
   if (loading) return <div className="text-center py-10 text-muted-foreground">Carregando O.S....</div>;
@@ -80,44 +109,81 @@ const GerenciarOS = () => {
             <tbody>
               {filtered.map((os) => (
                 <tr key={os.id} className="border-b border-border/30 hover:bg-muted/20 transition-colors">
-                  <td className="py-3 px-4">
-                    <span className="flex items-center gap-1.5 text-xs font-semibold">
-                      {os.tipo === "Rastreamento" ? <Radar className="w-3.5 h-3.5 text-primary" /> : <FileText className="w-3.5 h-3.5 text-secondary" />}
-                      {os.tipo}
-                    </span>
-                  </td>
-                  <td className="py-3 px-4 font-bold font-mono">{os.placa}</td>
-                  <td className="py-3 px-4 text-muted-foreground">{os.frota}</td>
-                  <td className="py-3 px-4">{os.tecnico_nome}</td>
-                  <td className="py-3 px-4 text-muted-foreground text-xs">{new Date(os.created_at).toLocaleDateString("pt-BR")}</td>
-                  <td className="py-3 px-4">
-                    {editStatusId === os.id ? (
-                      <select
-                        value={os.status}
-                        onChange={(e) => handleUpdateStatus(os.id, e.target.value as OSStatus)}
-                        onBlur={() => setEditStatusId(null)}
-                        autoFocus
-                        className="input-neon text-xs py-1 w-full"
-                      >
-                        {STATUS_OPTIONS.map((s) => <option key={s} value={s}>{s}</option>)}
-                      </select>
-                    ) : (
-                      <button onClick={() => setEditStatusId(os.id)} className={`px-2 py-1 rounded-full text-xs font-bold ${statusColor[os.status] || ""} cursor-pointer hover:opacity-80 flex items-center gap-1`}>
-                        {os.status}
-                        <ChevronDown className="w-3 h-3" />
-                      </button>
-                    )}
-                  </td>
-                  <td className="py-3 px-4">
-                    <div className="flex items-center gap-2">
-                      <button onClick={() => setViewOS(os)} className="text-muted-foreground hover:text-primary transition-colors" title="Visualizar">
-                        <Eye className="w-4 h-4" />
-                      </button>
-                      <button onClick={() => handleDelete(os.id)} className="text-muted-foreground hover:text-destructive transition-colors" title="Excluir">
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </td>
+                  {editingId === os.id ? (
+                    <>
+                      <td className="py-2 px-4">
+                        <select value={editData.tipo || ""} onChange={(e) => setEditData({ ...editData, tipo: e.target.value })} className="input-neon text-xs py-1 w-full">
+                          <option value="Veículo">Veículo</option>
+                          <option value="Rastreamento">Rastreamento</option>
+                        </select>
+                      </td>
+                      <td className="py-2 px-4">
+                        <input value={editData.placa || ""} onChange={(e) => setEditData({ ...editData, placa: e.target.value.toUpperCase() })} className="input-neon text-xs py-1 w-full font-mono" />
+                      </td>
+                      <td className="py-2 px-4">
+                        <input value={editData.frota || ""} onChange={(e) => setEditData({ ...editData, frota: e.target.value })} className="input-neon text-xs py-1 w-full" />
+                      </td>
+                      <td className="py-2 px-4">
+                        <input value={editData.tecnico_nome || ""} onChange={(e) => setEditData({ ...editData, tecnico_nome: e.target.value })} className="input-neon text-xs py-1 w-full" />
+                      </td>
+                      <td className="py-2 px-4 text-muted-foreground text-xs">{new Date(os.created_at).toLocaleDateString("pt-BR")}</td>
+                      <td className="py-2 px-4">
+                        <select value={editData.status || ""} onChange={(e) => setEditData({ ...editData, status: e.target.value })} className="input-neon text-xs py-1 w-full">
+                          {STATUS_OPTIONS.map((s) => <option key={s} value={s}>{s}</option>)}
+                        </select>
+                      </td>
+                      <td className="py-2 px-4">
+                        <div className="flex items-center gap-1">
+                          <button onClick={saveEdit} className="text-primary hover:text-primary/80"><Check className="w-4 h-4" /></button>
+                          <button onClick={cancelEdit} className="text-destructive hover:text-destructive/80"><X className="w-4 h-4" /></button>
+                        </div>
+                      </td>
+                    </>
+                  ) : (
+                    <>
+                      <td className="py-3 px-4">
+                        <span className="flex items-center gap-1.5 text-xs font-semibold">
+                          {os.tipo === "Rastreamento" ? <Radar className="w-3.5 h-3.5 text-primary" /> : <FileText className="w-3.5 h-3.5 text-secondary" />}
+                          {os.tipo}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4 font-bold font-mono">{os.placa}</td>
+                      <td className="py-3 px-4 text-muted-foreground">{os.frota}</td>
+                      <td className="py-3 px-4">{os.tecnico_nome}</td>
+                      <td className="py-3 px-4 text-muted-foreground text-xs">{new Date(os.created_at).toLocaleDateString("pt-BR")}</td>
+                      <td className="py-3 px-4">
+                        {editStatusId === os.id ? (
+                          <select
+                            value={os.status}
+                            onChange={(e) => handleUpdateStatus(os.id, e.target.value as OSStatus)}
+                            onBlur={() => setEditStatusId(null)}
+                            autoFocus
+                            className="input-neon text-xs py-1 w-full"
+                          >
+                            {STATUS_OPTIONS.map((s) => <option key={s} value={s}>{s}</option>)}
+                          </select>
+                        ) : (
+                          <button onClick={() => setEditStatusId(os.id)} className={`px-2 py-1 rounded-full text-xs font-bold ${statusColor[os.status] || ""} cursor-pointer hover:opacity-80 flex items-center gap-1`}>
+                            {os.status}
+                            <ChevronDown className="w-3 h-3" />
+                          </button>
+                        )}
+                      </td>
+                      <td className="py-3 px-4">
+                        <div className="flex items-center gap-2">
+                          <button onClick={() => startEdit(os)} className="text-muted-foreground hover:text-primary transition-colors" title="Editar">
+                            <Pencil className="w-4 h-4" />
+                          </button>
+                          <button onClick={() => setViewOS(os)} className="text-muted-foreground hover:text-primary transition-colors" title="Visualizar">
+                            <Eye className="w-4 h-4" />
+                          </button>
+                          <button onClick={() => handleDelete(os.id)} className="text-muted-foreground hover:text-destructive transition-colors" title="Excluir">
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </>
+                  )}
                 </tr>
               ))}
               {filtered.length === 0 && (

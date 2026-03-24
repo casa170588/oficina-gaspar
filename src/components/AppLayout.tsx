@@ -1,7 +1,7 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate, useLocation, Outlet } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { LayoutDashboard, FileText, Package, Users, LogOut, Menu, X, User, Radar, ClipboardList } from "lucide-react";
+import { LayoutDashboard, FileText, Package, Users, LogOut, Menu, X, User, Radar, ClipboardList, CircleDot } from "lucide-react";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -10,7 +10,8 @@ const navItems = [
   { path: "/os-veiculo", label: "O.S. Veículo", icon: FileText },
   { path: "/os-rastreamento", label: "O.S. Rastreamento", icon: Radar },
   { path: "/gerenciar-os", label: "Gerenciar O.S.", icon: ClipboardList },
-  { path: "/estoque", label: "Estoque", icon: Package },
+  { path: "/estoque", label: "Estoque Peças", icon: Package },
+  { path: "/estoque-pneus", label: "Estoque Pneus", icon: CircleDot },
   { path: "/usuarios", label: "Usuários", icon: Users },
 ];
 

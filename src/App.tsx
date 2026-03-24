@@ -9,6 +9,7 @@ import OSVeiculo from "./pages/OSVeiculo";
 import OSRastreamento from "./pages/OSRastreamento";
 import GerenciarOS from "./pages/GerenciarOS";
 import Estoque from "./pages/Estoque";
+import EstoquePneus from "./pages/EstoquePneus";
 import GestaoUsuarios from "./pages/GestaoUsuarios";
 import AppLayout from "./components/AppLayout";
 import NotFound from "./pages/NotFound";
@@ -36,6 +37,7 @@ const AppRoutes = () => {
         <Route path="/os-rastreamento" element={<OSRastreamento />} />
         <Route path="/gerenciar-os" element={<GerenciarOS />} />
         <Route path="/estoque" element={<Estoque />} />
+        <Route path="/estoque-pneus" element={<EstoquePneus />} />
         <Route path="/usuarios" element={<GestaoUsuarios />} />
       </Route>
       <Route path="*" element={<NotFound />} />
