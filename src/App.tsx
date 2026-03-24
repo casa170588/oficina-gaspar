@@ -9,6 +9,7 @@ import OSVeiculo from "./pages/OSVeiculo";
 import OSRastreamento from "./pages/OSRastreamento";
 import GerenciarOS from "./pages/GerenciarOS";
 import Estoque from "./pages/Estoque";
+import EstoquePneus from "./pages/EstoquePneus";
 import GestaoUsuarios from "./pages/GestaoUsuarios";
 import AppLayout from "./components/AppLayout";
 import NotFound from "./pages/NotFound";
