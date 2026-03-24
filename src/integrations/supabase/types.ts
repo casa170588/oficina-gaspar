@@ -59,6 +59,35 @@ export type Database = {
         }
         Relationships: []
       }
+      os_fotos: {
+        Row: {
+          created_at: string
+          foto_url: string
+          id: string
+          os_id: string
+        }
+        Insert: {
+          created_at?: string
+          foto_url: string
+          id?: string
+          os_id: string
+        }
+        Update: {
+          created_at?: string
+          foto_url?: string
+          id?: string
+          os_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "os_fotos_os_id_fkey"
+            columns: ["os_id"]
+            isOneToOne: false
+            referencedRelation: "ordens_servico"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       os_pecas: {
         Row: {
           id: string

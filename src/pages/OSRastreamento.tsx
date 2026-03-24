@@ -25,10 +25,8 @@ const OSRastreamento = () => {
   const [pecasUsadas, setPecasUsadas] = useState<PecaUsada[]>([]);
   const [showEstoqueAlert, setShowEstoqueAlert] = useState(false);
   const [buscaPeca, setBuscaPeca] = useState("");
-  const [fotoPecaAntiga, setFotoPecaAntiga] = useState<string | null>(null);
-  const [fotoPecaNova, setFotoPecaNova] = useState<string | null>(null);
-  const inputFotoAntigaRef = useRef<HTMLInputElement>(null);
-  const inputFotoNovaRef = useRef<HTMLInputElement>(null);
+  const [fotos, setFotos] = useState<string[]>([]);
+  const inputFotoRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
   const pecasRastreamento = items.filter((p) => p.tipo === "Rastreamento");
@@ -59,16 +57,22 @@ const OSRastreamento = () => {
     setPecasUsadas(pecasUsadas.filter((p) => p.codigo !== peca.codigo));
   };
 
-  const handleFoto = (e: React.ChangeEvent<HTMLInputElement>, tipo: "antiga" | "nova") => {
-    const file = e.target.files?.[0];
-    if (file) {
+  const handleFoto = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+    Array.from(files).forEach((file) => {
       const reader = new FileReader();
       reader.onload = () => {
-        if (tipo === "antiga") setFotoPecaAntiga(reader.result as string);
-        else setFotoPecaNova(reader.result as string);
+        setFotos((prev) => [...prev, reader.result as string]);
       };
       reader.readAsDataURL(file);
-    }
+    });
+    // Reset input so the same file can be added again
+    e.target.value = "";
+  };
+
+  const removeFoto = (index: number) => {
+    setFotos((prev) => prev.filter((_, i) => i !== index));
   };
 
   const salvarOS = async () => {
@@ -76,8 +80,8 @@ const OSRastreamento = () => {
       toast({ title: "Preencha placa e frota", variant: "destructive" });
       return;
     }
-    if (!fotoPecaAntiga || !fotoPecaNova) {
-      toast({ title: "Fotos obrigatórias!", description: "Adicione fotos da peça antiga e nova.", variant: "destructive" });
+    if (fotos.length === 0) {
+      toast({ title: "Adicione pelo menos 1 foto!", variant: "destructive" });
       return;
     }
     await createOS(
@@ -88,24 +92,23 @@ const OSRastreamento = () => {
         tecnico_nome: user?.name || "",
         tecnico_cpf: user?.cpf || "",
         descricao,
-        foto_peca_antiga: fotoPecaAntiga,
-        foto_peca_nova: fotoPecaNova,
+        foto_peca_antiga: fotos[0] || null,
+        foto_peca_nova: fotos[1] || null,
         user_id: supabaseUser?.id || null,
       },
-      pecasUsadas.map((p) => ({ nome: p.nome, codigo: p.codigo, quantidade: p.quantidade }))
+      pecasUsadas.map((p) => ({ nome: p.nome, codigo: p.codigo, quantidade: p.quantidade })),
+      fotos
     );
-    // Reset form
     setPlaca("");
     setFrota("");
     setDescricao("");
     setPecasUsadas([]);
-    setFotoPecaAntiga(null);
-    setFotoPecaNova(null);
+    setFotos([]);
   };
 
   const gerarPDF = () => {
-    if (!fotoPecaAntiga || !fotoPecaNova) {
-      toast({ title: "Fotos obrigatórias!", variant: "destructive" });
+    if (fotos.length === 0) {
+      toast({ title: "Adicione pelo menos 1 foto!", variant: "destructive" });
       return;
     }
     const doc = new jsPDF();
@@ -121,12 +124,18 @@ const OSRastreamento = () => {
     pecasUsadas.forEach((p, i) => {
       doc.text(`  - ${p.nome} [${p.codigo}] (x${p.quantidade})`, 20, 110 + i * 10);
     });
-    const yFotos = 120 + pecasUsadas.length * 10;
+    let yFotos = 120 + pecasUsadas.length * 10;
     doc.text("Fotos:", 20, yFotos);
-    doc.text("Peça Antiga:", 20, yFotos + 10);
-    if (fotoPecaAntiga) doc.addImage(fotoPecaAntiga, "JPEG", 20, yFotos + 15, 70, 50);
-    doc.text("Peça Nova:", 110, yFotos + 10);
-    if (fotoPecaNova) doc.addImage(fotoPecaNova, "JPEG", 110, yFotos + 15, 70, 50);
+    fotos.forEach((foto, i) => {
+      const x = 20 + (i % 2) * 90;
+      const row = Math.floor(i / 2);
+      const y = yFotos + 10 + row * 60;
+      if (y + 50 > 280) {
+        doc.addPage();
+        yFotos = 20 - 10 - row * 60;
+      }
+      doc.addImage(foto, "JPEG", x, y, 70, 50);
+    });
     doc.save(`OS_Rastreamento_${placa || "sem-placa"}.pdf`);
     toast({ title: "PDF gerado com sucesso!" });
   };
@@ -213,27 +222,33 @@ const OSRastreamento = () => {
       </motion.div>
 
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="card-floating p-6">
-        <h3 className="font-display text-lg font-bold text-primary mb-4">PROVA VISUAL (OBRIGATÓRIO)</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <input ref={inputFotoAntigaRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => handleFoto(e, "antiga")} />
-            <Button variant="neonCyan" className="w-full mb-3" onClick={() => inputFotoAntigaRef.current?.click()}><Camera className="w-4 h-4" />FOTO: PEÇA ANTIGA</Button>
-            {fotoPecaAntiga ? (
-              <div className="rounded-lg overflow-hidden border border-border/50 aspect-video"><img src={fotoPecaAntiga} alt="Peça antiga" className="w-full h-full object-cover" /></div>
-            ) : (
-              <div className="rounded-lg border border-dashed border-border/50 aspect-video flex items-center justify-center text-muted-foreground"><ImageIcon className="w-8 h-8" /></div>
-            )}
+        <h3 className="font-display text-lg font-bold text-primary mb-4">FOTOS DO SERVIÇO</h3>
+        <input ref={inputFotoRef} type="file" accept="image/*" capture="environment" multiple className="hidden" onChange={handleFoto} />
+        <Button variant="neonCyan" className="w-full mb-4" onClick={() => inputFotoRef.current?.click()}>
+          <Camera className="w-4 h-4" />
+          TIRAR / ADICIONAR FOTOS
+        </Button>
+        {fotos.length > 0 ? (
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            {fotos.map((foto, i) => (
+              <div key={i} className="relative rounded-lg overflow-hidden border border-border/50 aspect-video group">
+                <img src={foto} alt={`Foto ${i + 1}`} className="w-full h-full object-cover" />
+                <button
+                  onClick={() => removeFoto(i)}
+                  className="absolute top-1 right-1 bg-destructive/80 text-destructive-foreground rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <Trash2 className="w-3 h-3" />
+                </button>
+                <span className="absolute bottom-1 left-1 bg-background/70 text-xs px-1.5 py-0.5 rounded font-semibold">#{i + 1}</span>
+              </div>
+            ))}
           </div>
-          <div>
-            <input ref={inputFotoNovaRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => handleFoto(e, "nova")} />
-            <Button variant="neonCyan" className="w-full mb-3" onClick={() => inputFotoNovaRef.current?.click()}><Camera className="w-4 h-4" />FOTO: PEÇA NOVA</Button>
-            {fotoPecaNova ? (
-              <div className="rounded-lg overflow-hidden border border-border/50 aspect-video"><img src={fotoPecaNova} alt="Peça nova" className="w-full h-full object-cover" /></div>
-            ) : (
-              <div className="rounded-lg border border-dashed border-border/50 aspect-video flex items-center justify-center text-muted-foreground"><ImageIcon className="w-8 h-8" /></div>
-            )}
+        ) : (
+          <div className="rounded-lg border border-dashed border-border/50 aspect-video flex items-center justify-center text-muted-foreground max-w-xs mx-auto">
+            <ImageIcon className="w-8 h-8" />
           </div>
-        </div>
+        )}
+        <p className="text-xs text-muted-foreground mt-2 text-center">{fotos.length} foto(s) adicionada(s)</p>
       </motion.div>
 
       <div className="flex flex-wrap gap-3">
