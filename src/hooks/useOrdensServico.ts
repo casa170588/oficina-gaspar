@@ -16,6 +16,7 @@ export interface OrdemServico {
   user_id: string | null;
   created_at: string;
   pecas: { nome: string; codigo: string; quantidade: number }[];
+  fotos: string[];
 }
 
 export function useOrdensServico() {
@@ -35,18 +36,28 @@ export function useOrdensServico() {
       return;
     }
 
-    // Fetch pecas for each OS
     const osIds = (osData || []).map((os) => os.id);
-    const { data: pecasData } = await supabase
-      .from("os_pecas")
-      .select("*")
-      .in("os_id", osIds.length > 0 ? osIds : ["none"]);
+    
+    let pecasData: any[] = [];
+    let fotosData: any[] = [];
+    
+    if (osIds.length > 0) {
+      const [pecasRes, fotosRes] = await Promise.all([
+        supabase.from("os_pecas").select("*").in("os_id", osIds),
+        supabase.from("os_fotos").select("*").in("os_id", osIds),
+      ]);
+      pecasData = pecasRes.data || [];
+      fotosData = fotosRes.data || [];
+    }
 
     const result: OrdemServico[] = (osData || []).map((os) => ({
       ...os,
-      pecas: (pecasData || [])
+      pecas: pecasData
         .filter((p) => p.os_id === os.id)
         .map((p) => ({ nome: p.peca_nome, codigo: p.peca_codigo, quantidade: p.quantidade })),
+      fotos: fotosData
+        .filter((f) => f.os_id === os.id)
+        .map((f) => f.foto_url),
     }));
 
     setOsList(result);
@@ -69,7 +80,8 @@ export function useOrdensServico() {
       foto_peca_nova?: string | null;
       user_id?: string | null;
     },
-    pecas: { nome: string; codigo: string; quantidade: number }[]
+    pecas: { nome: string; codigo: string; quantidade: number }[],
+    fotos?: string[]
   ) => {
     const { data, error } = await supabase
       .from("ordens_servico")
@@ -103,6 +115,15 @@ export function useOrdensServico() {
       );
     }
 
+    if (fotos && fotos.length > 0) {
+      await supabase.from("os_fotos").insert(
+        fotos.map((foto_url) => ({
+          os_id: data.id,
+          foto_url,
+        }))
+      );
+    }
+
     await fetchOS();
     toast({ title: "O.S. salva com sucesso!" });
     return data;
@@ -131,7 +152,7 @@ export function useOrdensServico() {
   };
 
   const updateOS = async (id: string, updates: Partial<OrdemServico>) => {
-    const { pecas, ...dbUpdates } = updates as any;
+    const { pecas, fotos, ...dbUpdates } = updates as any;
     const { error } = await supabase.from("ordens_servico").update(dbUpdates).eq("id", id);
     if (error) {
       toast({ title: "Erro ao atualizar O.S.", description: error.message, variant: "destructive" });

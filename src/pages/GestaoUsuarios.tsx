@@ -1,37 +1,50 @@
-import { useState, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { UserPlus, Shield, Wrench, Camera, Pencil, User, Trash2, X, Search, Check } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Usuario {
-  id: number;
+  id: string;
+  user_id: string | null;
   nome: string;
   cpf: string;
   login: string;
   nivel: string;
-  status: string;
-  avatar?: string;
+  avatar_url: string | null;
 }
 
-const initialUsers: Usuario[] = [
-  { id: 1, nome: "Carlos Silva", cpf: "123.456.789-00", login: "admin", nivel: "MASTER", status: "Online" },
-  { id: 2, nome: "João Técnico", cpf: "987.654.321-00", login: "tecnico", nivel: "TÉCNICO", status: "Online" },
-  { id: 3, nome: "Maria Santos", cpf: "111.222.333-44", login: "maria", nivel: "TÉCNICO", status: "Offline" },
-  { id: 4, nome: "Pedro Supervisor", cpf: "555.666.777-88", login: "pedro", nivel: "SUPERVISOR", status: "Online" },
-];
-
 const GestaoUsuarios = () => {
-  const [users, setUsers] = useState<Usuario[]>(initialUsers);
+  const [users, setUsers] = useState<Usuario[]>([]);
+  const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
   const [search, setSearch] = useState("");
-  const [newUser, setNewUser] = useState({ nome: "", cpf: "", login: "", senha: "", nivel: "TÉCNICO", avatar: "" });
-  const [editingId, setEditingId] = useState<number | null>(null);
-  const [editUser, setEditUser] = useState<Usuario | null>(null);
-  const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
+  const [newUser, setNewUser] = useState({ nome: "", cpf: "", email: "", senha: "", nivel: "TÉCNICO", avatar: "" });
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editUser, setEditUser] = useState<Partial<Usuario> | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const fotoRef = useRef<HTMLInputElement>(null);
   const editFotoRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+
+  const fetchUsers = async () => {
+    const { data, error } = await supabase.from("profiles").select("*").order("created_at", { ascending: true });
+    if (!error && data) {
+      setUsers(data.map((p) => ({
+        id: p.id,
+        user_id: p.user_id,
+        nome: p.nome,
+        cpf: p.cpf,
+        login: p.login,
+        nivel: p.nivel,
+        avatar_url: p.avatar_url,
+      })));
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => { fetchUsers(); }, []);
 
   const filtered = users.filter(
     (u) =>
@@ -53,25 +66,42 @@ const GestaoUsuarios = () => {
     const file = e.target.files?.[0];
     if (file && editUser) {
       const reader = new FileReader();
-      reader.onload = () => setEditUser({ ...editUser, avatar: reader.result as string });
+      reader.onload = () => setEditUser({ ...editUser, avatar_url: reader.result as string });
       reader.readAsDataURL(file);
     }
   };
 
-  const handleAdd = () => {
-    if (!newUser.nome || !newUser.cpf || !newUser.login) return;
-    setUsers([...users, {
-      id: Date.now(),
+  const handleAdd = async () => {
+    if (!newUser.nome || !newUser.cpf || !newUser.email || !newUser.senha) {
+      toast({ title: "Preencha todos os campos obrigatórios", variant: "destructive" });
+      return;
+    }
+
+    // Create auth user via signup
+    const { data, error } = await supabase.auth.signUp({
+      email: newUser.email,
+      password: newUser.senha,
+    });
+
+    if (error || !data.user) {
+      toast({ title: "Erro ao criar usuário", description: error?.message, variant: "destructive" });
+      return;
+    }
+
+    // Create profile
+    await supabase.from("profiles").insert({
+      user_id: data.user.id,
       nome: newUser.nome,
       cpf: newUser.cpf,
-      login: newUser.login,
+      login: newUser.email,
       nivel: newUser.nivel,
-      status: "Offline",
-      avatar: newUser.avatar || undefined,
-    }]);
-    setNewUser({ nome: "", cpf: "", login: "", senha: "", nivel: "TÉCNICO", avatar: "" });
+      avatar_url: newUser.avatar || null,
+    });
+
+    setNewUser({ nome: "", cpf: "", email: "", senha: "", nivel: "TÉCNICO", avatar: "" });
     setShowAdd(false);
-    toast({ title: "Usuário cadastrado" });
+    await fetchUsers();
+    toast({ title: "Usuário cadastrado com sucesso!" });
   };
 
   const startEdit = (user: Usuario) => {
@@ -79,11 +109,23 @@ const GestaoUsuarios = () => {
     setEditUser({ ...user });
   };
 
-  const saveEdit = () => {
+  const saveEdit = async () => {
     if (!editUser || !editingId) return;
-    setUsers(users.map((u) => (u.id === editingId ? editUser : u)));
+    const { error } = await supabase.from("profiles").update({
+      nome: editUser.nome,
+      cpf: editUser.cpf,
+      login: editUser.login,
+      nivel: editUser.nivel,
+      avatar_url: editUser.avatar_url,
+    }).eq("id", editingId);
+
+    if (error) {
+      toast({ title: "Erro ao atualizar", description: error.message, variant: "destructive" });
+      return;
+    }
     setEditingId(null);
     setEditUser(null);
+    await fetchUsers();
     toast({ title: "Usuário atualizado" });
   };
 
@@ -92,11 +134,18 @@ const GestaoUsuarios = () => {
     setEditUser(null);
   };
 
-  const deleteUser = (id: number) => {
-    setUsers(users.filter((u) => u.id !== id));
+  const deleteUser = async (id: string) => {
+    const { error } = await supabase.from("profiles").delete().eq("id", id);
+    if (error) {
+      toast({ title: "Erro ao excluir", description: error.message, variant: "destructive" });
+      return;
+    }
     setConfirmDeleteId(null);
+    await fetchUsers();
     toast({ title: "Usuário excluído" });
   };
+
+  if (loading) return <div className="text-center py-10 text-muted-foreground">Carregando...</div>;
 
   return (
     <div className="space-y-6">
@@ -108,18 +157,11 @@ const GestaoUsuarios = () => {
         </Button>
       </div>
 
-      {/* Search */}
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-        <input
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="input-neon w-full pl-10"
-          placeholder="Buscar por nome, CPF ou login..."
-        />
+        <input value={search} onChange={(e) => setSearch(e.target.value)} className="input-neon w-full pl-10" placeholder="Buscar por nome, CPF ou login..." />
       </div>
 
-      {/* Add form */}
       <AnimatePresence>
         {showAdd && (
           <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden">
@@ -151,12 +193,12 @@ const GestaoUsuarios = () => {
                   <input value={newUser.cpf} onChange={(e) => setNewUser({ ...newUser, cpf: e.target.value })} className="input-neon w-full" placeholder="000.000.000-00" />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-primary mb-1 uppercase tracking-wider">Login</label>
-                  <input value={newUser.login} onChange={(e) => setNewUser({ ...newUser, login: e.target.value })} className="input-neon w-full" placeholder="Login" />
+                  <label className="block text-xs font-semibold text-primary mb-1 uppercase tracking-wider">E-mail (Login)</label>
+                  <input type="email" value={newUser.email} onChange={(e) => setNewUser({ ...newUser, email: e.target.value })} className="input-neon w-full" placeholder="email@exemplo.com" />
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-primary mb-1 uppercase tracking-wider">Senha</label>
-                  <input type="password" value={newUser.senha} onChange={(e) => setNewUser({ ...newUser, senha: e.target.value })} className="input-neon w-full" placeholder="Senha" />
+                  <input type="password" value={newUser.senha} onChange={(e) => setNewUser({ ...newUser, senha: e.target.value })} className="input-neon w-full" placeholder="Mínimo 6 caracteres" />
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-primary mb-1 uppercase tracking-wider">Nível de Acesso</label>
@@ -176,7 +218,6 @@ const GestaoUsuarios = () => {
         )}
       </AnimatePresence>
 
-      {/* Users table */}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="card-floating overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
@@ -186,7 +227,6 @@ const GestaoUsuarios = () => {
                 <th className="text-left py-3 px-4 text-muted-foreground uppercase tracking-wider text-xs">CPF</th>
                 <th className="text-left py-3 px-4 text-muted-foreground uppercase tracking-wider text-xs">Login</th>
                 <th className="text-left py-3 px-4 text-muted-foreground uppercase tracking-wider text-xs">Nível</th>
-                <th className="text-left py-3 px-4 text-muted-foreground uppercase tracking-wider text-xs">Status</th>
                 <th className="text-left py-3 px-4 text-muted-foreground uppercase tracking-wider text-xs">Ações</th>
               </tr>
             </thead>
@@ -198,24 +238,20 @@ const GestaoUsuarios = () => {
                       <td className="py-2 px-4">
                         <div className="flex items-center gap-2">
                           <div className="w-8 h-8 rounded-full bg-primary/10 border border-primary/30 flex items-center justify-center overflow-hidden cursor-pointer" onClick={() => editFotoRef.current?.click()}>
-                            {editUser.avatar ? <img src={editUser.avatar} className="w-full h-full object-cover" /> : <User className="w-4 h-4 text-muted-foreground" />}
+                            {editUser.avatar_url ? <img src={editUser.avatar_url} className="w-full h-full object-cover" /> : <User className="w-4 h-4 text-muted-foreground" />}
                           </div>
                           <input ref={editFotoRef} type="file" accept="image/*" className="hidden" onChange={handleEditFoto} />
-                          <input value={editUser.nome} onChange={(e) => setEditUser({ ...editUser, nome: e.target.value })} className="input-neon text-xs py-1 flex-1" />
+                          <input value={editUser.nome || ""} onChange={(e) => setEditUser({ ...editUser, nome: e.target.value })} className="input-neon text-xs py-1 flex-1" />
                         </div>
                       </td>
-                      <td className="py-2 px-4"><input value={editUser.cpf} onChange={(e) => setEditUser({ ...editUser, cpf: e.target.value })} className="input-neon text-xs py-1 w-full font-mono" /></td>
-                      <td className="py-2 px-4"><input value={editUser.login} onChange={(e) => setEditUser({ ...editUser, login: e.target.value })} className="input-neon text-xs py-1 w-full" /></td>
+                      <td className="py-2 px-4"><input value={editUser.cpf || ""} onChange={(e) => setEditUser({ ...editUser, cpf: e.target.value })} className="input-neon text-xs py-1 w-full font-mono" /></td>
+                      <td className="py-2 px-4"><input value={editUser.login || ""} onChange={(e) => setEditUser({ ...editUser, login: e.target.value })} className="input-neon text-xs py-1 w-full" /></td>
                       <td className="py-2 px-4">
-                        <select value={editUser.nivel} onChange={(e) => setEditUser({ ...editUser, nivel: e.target.value })} className="input-neon text-xs py-1 w-full">
+                        <select value={editUser.nivel || ""} onChange={(e) => setEditUser({ ...editUser, nivel: e.target.value })} className="input-neon text-xs py-1 w-full">
                           <option value="TÉCNICO">Técnico</option>
                           <option value="SUPERVISOR">Supervisor</option>
                           <option value="MASTER">Master</option>
                         </select>
-                      </td>
-                      <td className="py-2 px-4">
-                        <div className={`w-2 h-2 rounded-full inline-block mr-1 ${user.status === "Online" ? "bg-primary" : "bg-muted-foreground"}`} />
-                        <span className="text-xs">{user.status}</span>
                       </td>
                       <td className="py-2 px-4 flex gap-1">
                         <button onClick={saveEdit} className="text-primary hover:text-primary/80"><Check className="w-4 h-4" /></button>
@@ -227,8 +263,8 @@ const GestaoUsuarios = () => {
                       <td className="py-3 px-4">
                         <div className="flex items-center gap-2">
                           <div className="w-8 h-8 rounded-full bg-primary/10 border border-primary/30 flex items-center justify-center overflow-hidden">
-                            {user.avatar ? (
-                              <img src={user.avatar} alt={user.nome} className="w-full h-full object-cover" />
+                            {user.avatar_url ? (
+                              <img src={user.avatar_url} alt={user.nome} className="w-full h-full object-cover" />
                             ) : user.nivel === "MASTER" ? (
                               <Shield className="w-4 h-4 text-primary" />
                             ) : (
@@ -242,12 +278,6 @@ const GestaoUsuarios = () => {
                       <td className="py-3 px-4 text-muted-foreground">{user.login}</td>
                       <td className="py-3 px-4">
                         <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-primary/10 text-primary">{user.nivel}</span>
-                      </td>
-                      <td className="py-3 px-4">
-                        <div className="flex items-center gap-1.5">
-                          <div className={`w-2 h-2 rounded-full ${user.status === "Online" ? "bg-primary" : "bg-muted-foreground"}`} />
-                          <span className={`text-xs font-semibold ${user.status === "Online" ? "text-primary" : "text-muted-foreground"}`}>{user.status}</span>
-                        </div>
                       </td>
                       <td className="py-3 px-4">
                         <div className="flex items-center gap-2">
@@ -271,7 +301,7 @@ const GestaoUsuarios = () => {
                 </tr>
               ))}
               {filtered.length === 0 && (
-                <tr><td colSpan={6} className="py-8 text-center text-muted-foreground">Nenhum usuário encontrado</td></tr>
+                <tr><td colSpan={5} className="py-8 text-center text-muted-foreground">Nenhum usuário encontrado</td></tr>
               )}
             </tbody>
           </table>

@@ -48,16 +48,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         avatar: data.avatar_url || undefined,
       });
     } else {
-      // Create default profile
+      // Create default profile only if none exists (unique constraint prevents duplicates)
       const nome = sUser.email?.split("@")[0] || "Usuário";
-      await supabase.from("profiles").insert({
+      const { data: newProfile } = await supabase.from("profiles").insert({
         user_id: sUser.id,
         nome,
         cpf: "",
         login: sUser.email || "",
         nivel: "TÉCNICO",
-      });
-      setUser({ id: sUser.id, name: nome, cpf: "", level: "TÉCNICO" });
+      }).select().maybeSingle();
+      
+      if (newProfile) {
+        setUser({ id: sUser.id, name: newProfile.nome, cpf: newProfile.cpf, level: newProfile.nivel });
+      }
     }
   };
 
