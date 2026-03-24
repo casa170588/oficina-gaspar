@@ -10,7 +10,8 @@ const navItems = [
   { path: "/os-veiculo", label: "O.S. Veículo", icon: FileText },
   { path: "/os-rastreamento", label: "O.S. Rastreamento", icon: Radar },
   { path: "/gerenciar-os", label: "Gerenciar O.S.", icon: ClipboardList },
-  { path: "/estoque", label: "Estoque", icon: Package },
+  { path: "/estoque", label: "Estoque Peças", icon: Package },
+  { path: "/estoque-pneus", label: "Estoque Pneus", icon: CircleDot },
   { path: "/usuarios", label: "Usuários", icon: Users },
 ];
 

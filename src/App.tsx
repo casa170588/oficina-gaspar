@@ -37,6 +37,7 @@ const AppRoutes = () => {
         <Route path="/os-rastreamento" element={<OSRastreamento />} />
         <Route path="/gerenciar-os" element={<GerenciarOS />} />
         <Route path="/estoque" element={<Estoque />} />
+        <Route path="/estoque-pneus" element={<EstoquePneus />} />
         <Route path="/usuarios" element={<GestaoUsuarios />} />
       </Route>
       <Route path="*" element={<NotFound />} />
