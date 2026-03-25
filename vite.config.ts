@@ -17,7 +17,7 @@ export default defineConfig(({ mode }) => ({
     mode === "development" && componentTagger(),
     VitePWA({
       registerType: "autoUpdate",
-      includeAssets: ["placeholder.svg", "robots.txt"],
+      includeAssets: ["placeholder.svg", "robots.txt", "images/oficina-cover.png"],
       workbox: {
         navigateFallbackDenylist: [/^\/~oauth/],
         globPatterns: ["**/*.{js,css,html,ico,png,svg,jpg,webp}"],
@@ -33,16 +33,16 @@ export default defineConfig(({ mode }) => ({
         start_url: "/",
         icons: [
           {
-            src: "/placeholder.svg",
-            sizes: "192x192",
-            type: "image/svg+xml",
-            purpose: "any maskable",
+            src: "/images/oficina-cover.png",
+            sizes: "512x512",
+            type: "image/png",
+            purpose: "any",
           },
           {
-            src: "/placeholder.svg",
-            sizes: "512x512",
-            type: "image/svg+xml",
-            purpose: "any maskable",
+            src: "/images/oficina-cover.png",
+            sizes: "192x192",
+            type: "image/png",
+            purpose: "maskable",
           },
         ],
       },

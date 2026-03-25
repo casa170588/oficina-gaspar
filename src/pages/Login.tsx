@@ -42,9 +42,9 @@ const Login = () => {
           <motion.div
             animate={{ scale: [1, 1.05, 1] }}
             transition={{ duration: 3, repeat: Infinity }}
-            className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-primary/10 border-2 border-primary/50 mb-4 glow-green"
+            className="inline-flex items-center justify-center w-24 h-24 rounded-full border-2 border-primary/50 mb-4 glow-green overflow-hidden"
           >
-            <User className="w-10 h-10 text-primary" />
+            <img src="/images/oficina-cover.png" alt="OFICINA TL-BLU" className="w-full h-full object-cover" />
           </motion.div>
           <h1 className="text-3xl font-display font-bold text-foreground text-glow-green">
             OFICINA-BLU
