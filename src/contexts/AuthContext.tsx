@@ -13,7 +13,7 @@ interface User {
 interface AuthContextType {
   user: User | null;
   supabaseUser: SupabaseUser | null;
-  login: (email: string, password: string) => Promise<boolean>;
+  login: (identifier: string, password: string) => Promise<boolean>;
   signup: (email: string, password: string, profile: { nome: string; cpf: string; nivel: string }) => Promise<boolean>;
   logout: () => void;
   loading: boolean;
@@ -87,8 +87,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return () => subscription.unsubscribe();
   }, []);
 
-  const login = async (email: string, password: string): Promise<boolean> => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+  const login = async (identifier: string, password: string): Promise<boolean> => {
+    let resolvedLogin = identifier.trim();
+
+    if (!resolvedLogin.includes("@")) {
+      const { data: byLogin } = await supabase.from("profiles").select("login").eq("login", resolvedLogin).maybeSingle();
+
+      if (byLogin?.login) {
+        resolvedLogin = byLogin.login;
+      } else {
+        const { data: byName } = await supabase.from("profiles").select("login").ilike("nome", resolvedLogin).maybeSingle();
+        if (byName?.login) resolvedLogin = byName.login;
+      }
+    }
+
+    const { error } = await supabase.auth.signInWithPassword({ email: resolvedLogin, password });
     return !error;
   };
 

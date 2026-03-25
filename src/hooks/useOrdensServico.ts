@@ -66,6 +66,39 @@ export function useOrdensServico() {
 
   useEffect(() => {
     fetchOS();
+
+    const ordensChannel = supabase
+      .channel("ordens-servico-realtime")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "ordens_servico" },
+        () => fetchOS()
+      )
+      .subscribe();
+
+    const pecasChannel = supabase
+      .channel("os-pecas-realtime")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "os_pecas" },
+        () => fetchOS()
+      )
+      .subscribe();
+
+    const fotosChannel = supabase
+      .channel("os-fotos-realtime")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "os_fotos" },
+        () => fetchOS()
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(ordensChannel);
+      supabase.removeChannel(pecasChannel);
+      supabase.removeChannel(fotosChannel);
+    };
   }, []);
 
   const createOS = async (

@@ -1,18 +1,19 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { Plus, Search, AlertTriangle, Pencil, Check, X } from "lucide-react";
+import { Plus, Search, AlertTriangle, Pencil, Check, X, Trash2 } from "lucide-react";
 import { useEstoque, type ItemEstoque } from "@/hooks/useEstoque";
 import { TIPOS_PECA } from "@/data/pecas";
 
 const Estoque = () => {
-  const { items, loading, addItem, updateItem } = useEstoque();
+  const { items, loading, addItem, updateItem, deleteItem } = useEstoque();
   const [search, setSearch] = useState("");
   const [filterTipo, setFilterTipo] = useState("");
   const [showAdd, setShowAdd] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editData, setEditData] = useState<Partial<ItemEstoque>>({});
   const [newItem, setNewItem] = useState({ nome: "", codigo: "", quantidade: 0, tipo: "" });
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   const filtered = items.filter(
     (i) =>
@@ -135,9 +136,21 @@ const Estoque = () => {
                         <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-primary/10 text-primary">{item.tipo}</span>
                       </td>
                       <td className="py-3 px-4">
-                        <button onClick={() => startEdit(item)} className="text-muted-foreground hover:text-primary transition-colors">
-                          <Pencil className="w-4 h-4" />
-                        </button>
+                        <div className="flex items-center gap-2">
+                          <button onClick={() => startEdit(item)} className="text-muted-foreground hover:text-primary transition-colors">
+                            <Pencil className="w-4 h-4" />
+                          </button>
+                          {confirmDeleteId === item.id ? (
+                            <div className="flex items-center gap-1">
+                              <button onClick={() => deleteItem(item.id)} className="text-destructive hover:text-destructive/80 text-xs font-bold">Confirmar</button>
+                              <button onClick={() => setConfirmDeleteId(null)} className="text-muted-foreground text-xs">Cancelar</button>
+                            </div>
+                          ) : (
+                            <button onClick={() => setConfirmDeleteId(item.id)} className="text-muted-foreground hover:text-destructive transition-colors">
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </>
                   )}

@@ -152,6 +152,7 @@ export type Database = {
           created_at: string
           id: string
           medida: string
+          numero_fogo: string
           quantidade: number
           tipo: string
         }
@@ -159,6 +160,7 @@ export type Database = {
           created_at?: string
           id?: string
           medida: string
+          numero_fogo?: string
           quantidade?: number
           tipo?: string
         }
@@ -166,6 +168,7 @@ export type Database = {
           created_at?: string
           id?: string
           medida?: string
+          numero_fogo?: string
           quantidade?: number
           tipo?: string
         }
