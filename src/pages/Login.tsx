@@ -7,32 +7,19 @@ import { User, Lock, LogIn, UserPlus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 const Login = () => {
-  const [email, setEmail] = useState("");
+  const [usuario, setUsuario] = useState("");
   const [password, setPassword] = useState("");
-  const [isSignup, setIsSignup] = useState(false);
-  const [nome, setNome] = useState("");
-  const [cpf, setCpf] = useState("");
-  const { login, signup } = useAuth();
+  const { login } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (isSignup) {
-      const ok = await signup(email, password, { nome, cpf, nivel: "TÉCNICO" });
-      if (ok) {
-        toast({ title: "Conta criada com sucesso!" });
-        setIsSignup(false);
-      } else {
-        toast({ title: "Erro ao criar conta", variant: "destructive" });
-      }
+    const ok = await login(usuario, password);
+    if (ok) {
+      navigate("/dashboard");
     } else {
-      const ok = await login(email, password);
-      if (ok) {
-        navigate("/dashboard");
-      } else {
-        toast({ title: "Credenciais inválidas", variant: "destructive" });
-      }
+      toast({ title: "Credenciais inválidas", description: "Use o nome cadastrado ou o login antigo.", variant: "destructive" });
     }
   };
 
@@ -63,28 +50,16 @@ const Login = () => {
             OFICINA-BLU
           </h1>
           <p className="text-muted-foreground mt-2 text-lg">
-            {isSignup ? "Criar Conta" : "Sistema de Gestão Elite"}
+            Sistema de Gestão Elite
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-5">
-          {isSignup && (
-            <>
-              <div>
-                <label className="block text-sm font-semibold text-primary mb-2 uppercase tracking-wider">Nome Completo</label>
-                <input value={nome} onChange={(e) => setNome(e.target.value)} className="input-neon w-full" placeholder="Nome completo" required />
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-primary mb-2 uppercase tracking-wider">CPF</label>
-                <input value={cpf} onChange={(e) => setCpf(e.target.value)} className="input-neon w-full" placeholder="000.000.000-00" />
-              </div>
-            </>
-          )}
           <div>
-            <label className="block text-sm font-semibold text-primary mb-2 uppercase tracking-wider">E-mail</label>
+            <label className="block text-sm font-semibold text-primary mb-2 uppercase tracking-wider">Usuário</label>
             <div className="relative">
               <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="input-neon w-full pl-10" placeholder="email@exemplo.com" required />
+              <input value={usuario} onChange={(e) => setUsuario(e.target.value)} className="input-neon w-full pl-10" placeholder="Digite seu nome de acesso" required />
             </div>
           </div>
           <div>
@@ -96,13 +71,9 @@ const Login = () => {
           </div>
 
           <Button type="submit" variant="neonCyan" size="lg" className="w-full animate-glow-breathe">
-            {isSignup ? <><UserPlus className="w-4 h-4" /> CRIAR CONTA</> : <><LogIn className="w-4 h-4" /> ENTRAR</>}
+            <><LogIn className="w-4 h-4" /> ENTRAR</>
           </Button>
         </form>
-
-        <button onClick={() => setIsSignup(!isSignup)} className="w-full text-center text-muted-foreground text-xs mt-6 hover:text-primary transition-colors">
-          {isSignup ? "Já tem conta? Faça login" : "Não tem conta? Cadastre-se"}
-        </button>
       </motion.div>
     </div>
   );

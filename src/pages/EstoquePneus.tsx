@@ -26,7 +26,7 @@ const EstoquePneus = () => {
   const [showAdd, setShowAdd] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editData, setEditData] = useState<Partial<Pneu>>({});
-  const [newPneu, setNewPneu] = useState({ medida: "", quantidade: 0, tipo: "Novo" });
+  const [newPneu, setNewPneu] = useState({ medida: "", numero_fogo: "", quantidade: 0, tipo: "Novo" });
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   const filtered = pneus.filter(
@@ -41,14 +41,14 @@ const EstoquePneus = () => {
     if (!newPneu.medida || !newPneu.tipo) return;
     const ok = await addPneu(newPneu);
     if (ok) {
-      setNewPneu({ medida: "", quantidade: 0, tipo: "Novo" });
+      setNewPneu({ medida: "", numero_fogo: "", quantidade: 0, tipo: "Novo" });
       setShowAdd(false);
     }
   };
 
   const startEdit = (pneu: Pneu) => {
     setEditingId(pneu.id);
-    setEditData({ medida: pneu.medida, quantidade: pneu.quantidade, tipo: pneu.tipo });
+    setEditData({ medida: pneu.medida, numero_fogo: pneu.numero_fogo, quantidade: pneu.quantidade, tipo: pneu.tipo });
   };
 
   const saveEdit = async () => {
@@ -118,6 +118,7 @@ const EstoquePneus = () => {
             <thead>
               <tr className="border-b border-border/50 bg-muted/20">
                 <th className="text-left py-3 px-4 text-muted-foreground uppercase tracking-wider text-xs">Medida</th>
+                <th className="text-left py-3 px-4 text-muted-foreground uppercase tracking-wider text-xs">Nº Fogo</th>
                 <th className="text-left py-3 px-4 text-muted-foreground uppercase tracking-wider text-xs">Quantidade</th>
                 <th className="text-left py-3 px-4 text-muted-foreground uppercase tracking-wider text-xs">Tipo</th>
                 <th className="text-left py-3 px-4 text-muted-foreground uppercase tracking-wider text-xs">Ações</th>
@@ -130,6 +131,9 @@ const EstoquePneus = () => {
                     <>
                       <td className="py-2 px-4">
                         <input value={editData.medida || ""} onChange={(e) => setEditData({ ...editData, medida: e.target.value })} className="input-neon w-full text-xs py-1" list="medidas-list" />
+                      </td>
+                      <td className="py-2 px-4">
+                        <input value={editData.numero_fogo || ""} onChange={(e) => setEditData({ ...editData, numero_fogo: e.target.value })} className="input-neon w-full text-xs py-1" placeholder="Número de fogo" />
                       </td>
                       <td className="py-2 px-4">
                         <input type="number" value={editData.quantidade ?? 0} onChange={(e) => setEditData({ ...editData, quantidade: Number(e.target.value) })} className="input-neon w-20 text-xs py-1" />
@@ -147,6 +151,7 @@ const EstoquePneus = () => {
                   ) : (
                     <>
                       <td className="py-3 px-4 font-semibold font-mono">{pneu.medida}</td>
+                      <td className="py-3 px-4 text-muted-foreground font-mono text-xs">{pneu.numero_fogo || "—"}</td>
                       <td className="py-3 px-4">
                         <span className={`px-2 py-1 rounded-full text-xs font-bold ${
                           pneu.quantidade === 0 ? "bg-destructive/20 text-destructive"
@@ -181,7 +186,7 @@ const EstoquePneus = () => {
                 </tr>
               ))}
               {filtered.length === 0 && (
-                <tr><td colSpan={4} className="py-8 text-center text-muted-foreground">Nenhum pneu encontrado</td></tr>
+                <tr><td colSpan={5} className="py-8 text-center text-muted-foreground">Nenhum pneu encontrado</td></tr>
               )}
             </tbody>
           </table>
@@ -204,6 +209,10 @@ const EstoquePneus = () => {
                   <datalist id="medidas-list-add">
                     {MEDIDAS_COMUNS.map((m) => <option key={m} value={m} />)}
                   </datalist>
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-primary mb-1 uppercase tracking-wider">Número de Fogo</label>
+                  <input value={newPneu.numero_fogo} onChange={(e) => setNewPneu({ ...newPneu, numero_fogo: e.target.value })} className="input-neon w-full" placeholder="Digite o número de fogo" />
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-primary mb-1 uppercase tracking-wider">Quantidade</label>

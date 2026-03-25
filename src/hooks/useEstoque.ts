@@ -23,6 +23,7 @@ export function useEstoque() {
 
     if (error) {
       toast({ title: "Erro ao carregar estoque", variant: "destructive" });
+      setLoading(false);
       return;
     }
     setItems(data || []);
@@ -31,6 +32,19 @@ export function useEstoque() {
 
   useEffect(() => {
     fetchItems();
+
+    const channel = supabase
+      .channel("pecas-realtime")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "pecas" },
+        () => fetchItems()
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const addItem = async (item: { nome: string; codigo: string; quantidade: number; tipo: string }) => {
@@ -52,6 +66,17 @@ export function useEstoque() {
     }
     await fetchItems();
     toast({ title: "Item atualizado" });
+    return true;
+  };
+
+  const deleteItem = async (id: string) => {
+    const { error } = await supabase.from("pecas").delete().eq("id", id);
+    if (error) {
+      toast({ title: "Erro ao excluir item", description: error.message, variant: "destructive" });
+      return false;
+    }
+    await fetchItems();
+    toast({ title: "Item excluído" });
     return true;
   };
 
@@ -79,5 +104,5 @@ export function useEstoque() {
     return true;
   };
 
-  return { items, loading, fetchItems, addItem, updateItem, decrementStock, incrementStock };
+  return { items, loading, fetchItems, addItem, updateItem, deleteItem, decrementStock, incrementStock };
 }

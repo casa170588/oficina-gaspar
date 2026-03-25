@@ -5,6 +5,7 @@ import { useToast } from "@/hooks/use-toast";
 export interface Pneu {
   id: string;
   medida: string;
+  numero_fogo: string;
   quantidade: number;
   tipo: string;
   created_at: string;
@@ -23,18 +24,41 @@ export function usePneus() {
 
     if (error) {
       toast({ title: "Erro ao carregar pneus", variant: "destructive" });
+      setLoading(false);
       return;
     }
-    setPneus(data || []);
+    setPneus(
+      ((data as Array<Record<string, unknown>>) || []).map((item) => ({
+        id: String(item.id || ""),
+        medida: String(item.medida || ""),
+        numero_fogo: String(item.numero_fogo || ""),
+        quantidade: Number(item.quantidade || 0),
+        tipo: String(item.tipo || "Novo"),
+        created_at: String(item.created_at || ""),
+      }))
+    );
     setLoading(false);
   };
 
   useEffect(() => {
     fetchPneus();
+
+    const channel = supabase
+      .channel("pneus-realtime")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "pneus" },
+        () => fetchPneus()
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
-  const addPneu = async (pneu: { medida: string; quantidade: number; tipo: string }) => {
-    const { error } = await supabase.from("pneus").insert(pneu);
+  const addPneu = async (pneu: { medida: string; numero_fogo: string; quantidade: number; tipo: string }) => {
+    const { error } = await supabase.from("pneus").insert(pneu as never);
     if (error) {
       toast({ title: "Erro ao adicionar pneu", description: error.message, variant: "destructive" });
       return false;
@@ -45,7 +69,7 @@ export function usePneus() {
   };
 
   const updatePneu = async (id: string, updates: Partial<Pneu>) => {
-    const { error } = await supabase.from("pneus").update(updates).eq("id", id);
+    const { error } = await supabase.from("pneus").update(updates as never).eq("id", id);
     if (error) {
       toast({ title: "Erro ao atualizar", description: error.message, variant: "destructive" });
       return false;

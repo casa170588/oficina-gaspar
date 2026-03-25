@@ -1,20 +1,17 @@
 import { motion } from "framer-motion";
 import { Wrench, AlertTriangle, Users, TrendingUp } from "lucide-react";
-
-const cards = [
-  { title: "Total Serviços Mês", value: "47", icon: Wrench, color: "text-primary" },
-  { title: "Alertas de Estoque", value: "3", icon: AlertTriangle, color: "text-destructive" },
-  { title: "Técnicos Online", value: "5", icon: Users, color: "text-primary" },
-  { title: "O.S. Abertas", value: "12", icon: TrendingUp, color: "text-secondary" },
-];
-
-const recentOS = [
-  { placa: "ABC-1D23", frota: "FR-012", tecnico: "João", status: "Concluída" },
-  { placa: "XYZ-4E56", frota: "FR-045", tecnico: "Pedro", status: "Em andamento" },
-  { placa: "DEF-7G89", frota: "FR-078", tecnico: "Maria", status: "Aguardando peças" },
-];
+import { useDashboardMetrics } from "@/hooks/useDashboardMetrics";
 
 const Dashboard = () => {
+  const { metrics, loading } = useDashboardMetrics();
+
+  const cards = [
+    { title: "Total Serviços Mês", value: String(metrics.totalServicosMes), icon: Wrench, color: "text-primary" },
+    { title: "Alertas de Estoque", value: String(metrics.alertasEstoque), icon: AlertTriangle, color: "text-destructive" },
+    { title: "Técnicos Cadastrados", value: String(metrics.tecnicos), icon: Users, color: "text-primary" },
+    { title: "O.S. Abertas", value: String(metrics.osAbertas), icon: TrendingUp, color: "text-secondary" },
+  ];
+
   return (
     <div className="space-y-6">
       <h2 className="font-display text-2xl font-bold text-glow-green">PAINEL DE CONTROLE</h2>
@@ -33,7 +30,7 @@ const Dashboard = () => {
               <div className="flex items-center justify-between mb-3">
                 <Icon className={`w-6 h-6 ${card.color}`} />
               </div>
-              <p className="text-3xl font-display font-bold text-foreground">{card.value}</p>
+              <p className="text-3xl font-display font-bold text-foreground">{loading ? "..." : card.value}</p>
               <p className="text-sm text-muted-foreground mt-1 uppercase tracking-wider">{card.title}</p>
             </motion.div>
           );
@@ -58,7 +55,7 @@ const Dashboard = () => {
               </tr>
             </thead>
             <tbody>
-              {recentOS.map((os) => (
+              {metrics.recentOS.map((os) => (
                 <tr key={os.placa} className="border-b border-border/30 hover:bg-muted/30 transition-colors">
                   <td className="py-3 px-2 font-semibold">{os.placa}</td>
                   <td className="py-3 px-2">{os.frota}</td>
@@ -74,6 +71,11 @@ const Dashboard = () => {
                   </td>
                 </tr>
               ))}
+              {!metrics.recentOS.length && (
+                <tr>
+                  <td colSpan={4} className="py-6 px-2 text-center text-muted-foreground">Nenhuma O.S. cadastrada ainda</td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
