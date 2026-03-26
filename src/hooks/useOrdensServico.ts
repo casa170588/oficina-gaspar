@@ -4,6 +4,7 @@ import { useToast } from "@/hooks/use-toast";
 
 export interface OrdemServico {
   id: string;
+  numero_os: number | null;
   tipo: string;
   placa: string;
   frota: string;
