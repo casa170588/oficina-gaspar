@@ -81,7 +81,7 @@ const OSVeiculo = () => {
       toast({ title: "Adicione pelo menos 1 foto!", variant: "destructive" });
       return;
     }
-    await createOS(
+    const result = await createOS(
       {
         tipo: "Veículo",
         placa,
@@ -96,6 +96,9 @@ const OSVeiculo = () => {
       pecasUsadas.map((p) => ({ nome: p.nome, codigo: p.codigo, quantidade: p.quantidade })),
       fotos
     );
+    if (result?.numero_os) {
+      toast({ title: `O.S. nº ${String(result.numero_os).padStart(4, "0")} criada!` });
+    }
     setPlaca("");
     setFrota("");
     setDescricao("");

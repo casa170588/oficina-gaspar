@@ -37,10 +37,39 @@ const Dashboard = () => {
         })}
       </div>
 
+      {/* Tire Inventory Summary */}
+      {!loading && metrics.pneusPorTamanho.length > 0 && (
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }} className="card-floating p-5">
+          <h3 className="font-display text-lg font-bold text-primary mb-4">ESTOQUE DE PNEUS</h3>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border/50 text-xs text-muted-foreground uppercase tracking-wider">
+                  <th className="px-4 py-2 text-left">Medida</th>
+                  <th className="px-4 py-2 text-center">Novos</th>
+                  <th className="px-4 py-2 text-center">Recapados</th>
+                  <th className="px-4 py-2 text-center">Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                {metrics.pneusPorTamanho.map((p) => (
+                  <tr key={p.medida} className="border-b border-border/30 hover:bg-muted/20 transition-colors">
+                    <td className="px-4 py-2 font-mono font-bold">{p.medida}</td>
+                    <td className="px-4 py-2 text-center text-primary font-bold">{p.novos}</td>
+                    <td className="px-4 py-2 text-center text-secondary font-bold">{p.recapados}</td>
+                    <td className="px-4 py-2 text-center font-bold">{p.novos + p.recapados}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </motion.div>
+      )}
+
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.4 }}
+        transition={{ delay: 0.6 }}
         className="card-floating p-5"
       >
         <h3 className="font-display text-lg font-bold mb-4 text-primary">ORDENS RECENTES</h3>
@@ -55,8 +84,8 @@ const Dashboard = () => {
               </tr>
             </thead>
             <tbody>
-              {metrics.recentOS.map((os) => (
-                <tr key={os.placa} className="border-b border-border/30 hover:bg-muted/30 transition-colors">
+              {metrics.recentOS.map((os, i) => (
+                <tr key={i} className="border-b border-border/30 hover:bg-muted/30 transition-colors">
                   <td className="py-3 px-2 font-semibold">{os.placa}</td>
                   <td className="py-3 px-2">{os.frota}</td>
                   <td className="py-3 px-2">{os.tecnico}</td>
