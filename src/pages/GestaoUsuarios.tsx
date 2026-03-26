@@ -5,12 +5,24 @@ import { UserPlus, Shield, Wrench, Camera, Pencil, User, Trash2, X, Search, Chec
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
+const MODULOS = [
+  { key: "dashboard", label: "Painel" },
+  { key: "os-veiculo", label: "O.S. Veículo" },
+  { key: "os-rastreamento", label: "O.S. Rastreamento" },
+  { key: "gerenciar-os", label: "Gerenciar O.S." },
+  { key: "estoque", label: "Estoque Peças" },
+  { key: "estoque-pneus", label: "Estoque Pneus" },
+  { key: "patio", label: "Pátio" },
+  { key: "usuarios", label: "Usuários" },
+];
+
 interface Usuario {
   id: string;
   user_id: string | null;
   nome: string;
   nivel: string;
   avatar_url: string | null;
+  permissoes: string[];
 }
 
 const GestaoUsuarios = () => {
@@ -18,7 +30,7 @@ const GestaoUsuarios = () => {
   const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
   const [search, setSearch] = useState("");
-  const [newUser, setNewUser] = useState({ nome: "", senha: "", nivel: "TÉCNICO", avatar: "" });
+  const [newUser, setNewUser] = useState({ nome: "", senha: "", nivel: "TÉCNICO", avatar: "", permissoes: MODULOS.map(m => m.key) });
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editUser, setEditUser] = useState<(Partial<Usuario> & { senha?: string }) | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
@@ -35,6 +47,7 @@ const GestaoUsuarios = () => {
         nome: p.nome,
         nivel: p.nivel,
         avatar_url: p.avatar_url,
+        permissoes: (p as any).permissoes || MODULOS.map(m => m.key),
       })));
     }
     setLoading(false);
@@ -94,6 +107,7 @@ const GestaoUsuarios = () => {
         senha: newUser.senha,
         nivel: newUser.nivel,
         avatar_url: newUser.avatar || null,
+        permissoes: newUser.permissoes,
       },
     });
 
@@ -102,7 +116,7 @@ const GestaoUsuarios = () => {
       return;
     }
 
-    setNewUser({ nome: "", senha: "", nivel: "TÉCNICO", avatar: "" });
+    setNewUser({ nome: "", senha: "", nivel: "TÉCNICO", avatar: "", permissoes: MODULOS.map(m => m.key) });
     setShowAdd(false);
     await fetchUsers();
     toast({ title: "Usuário cadastrado com sucesso!" });
@@ -123,6 +137,7 @@ const GestaoUsuarios = () => {
         nivel: editUser.nivel,
         avatar_url: editUser.avatar_url,
         senha: editUser.senha,
+        permissoes: editUser.permissoes,
       },
     });
 
