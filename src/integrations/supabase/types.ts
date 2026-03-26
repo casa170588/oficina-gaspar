@@ -22,6 +22,7 @@ export type Database = {
           foto_peca_nova: string | null
           frota: string
           id: string
+          numero_os: number | null
           placa: string
           status: string
           tecnico_cpf: string
@@ -36,6 +37,7 @@ export type Database = {
           foto_peca_nova?: string | null
           frota?: string
           id?: string
+          numero_os?: number | null
           placa?: string
           status?: string
           tecnico_cpf?: string
@@ -50,6 +52,7 @@ export type Database = {
           foto_peca_nova?: string | null
           frota?: string
           id?: string
+          numero_os?: number | null
           placa?: string
           status?: string
           tecnico_cpf?: string
@@ -119,6 +122,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      patio: {
+        Row: {
+          carga: string
+          created_at: string
+          eixos: string
+          frota: string
+          id: string
+          motivo_bloqueio: string | null
+          placa: string
+          situacao: string
+          tipo_veiculo: string
+          updated_at: string
+        }
+        Insert: {
+          carga?: string
+          created_at?: string
+          eixos?: string
+          frota?: string
+          id?: string
+          motivo_bloqueio?: string | null
+          placa?: string
+          situacao?: string
+          tipo_veiculo?: string
+          updated_at?: string
+        }
+        Update: {
+          carga?: string
+          created_at?: string
+          eixos?: string
+          frota?: string
+          id?: string
+          motivo_bloqueio?: string | null
+          placa?: string
+          situacao?: string
+          tipo_veiculo?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       pecas: {
         Row: {
