@@ -229,6 +229,27 @@ const GestaoUsuarios = () => {
                   </select>
                 </div>
               </div>
+              <div className="mt-4">
+                <label className="block text-xs font-semibold text-primary mb-2 uppercase tracking-wider">Permissões de Módulos</label>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                  {MODULOS.map((m) => (
+                    <label key={m.key} className="flex items-center gap-2 text-xs cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={newUser.permissoes.includes(m.key)}
+                        onChange={(e) => {
+                          const perms = e.target.checked
+                            ? [...newUser.permissoes, m.key]
+                            : newUser.permissoes.filter((p) => p !== m.key);
+                          setNewUser({ ...newUser, permissoes: perms });
+                        }}
+                        className="accent-primary"
+                      />
+                      <span className="text-foreground">{m.label}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
               <div className="flex gap-3 mt-4">
                 <Button variant="neonCyan" onClick={handleAdd}>Cadastrar</Button>
                 <Button variant="outline" onClick={() => setShowAdd(false)}>Cancelar</Button>
@@ -271,6 +292,27 @@ const GestaoUsuarios = () => {
                         <div className="relative mt-2">
                           <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
                           <input type="password" value={editUser.senha || ""} onChange={(e) => setEditUser({ ...editUser, senha: e.target.value })} className="input-neon text-xs py-1 w-full pl-8" placeholder="Nova senha (opcional)" />
+                        </div>
+                        <div className="mt-2">
+                          <p className="text-[10px] text-muted-foreground mb-1 uppercase">Permissões</p>
+                          <div className="flex flex-wrap gap-1">
+                            {MODULOS.map((m) => (
+                              <label key={m.key} className="flex items-center gap-1 text-[10px] cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  checked={(editUser.permissoes || []).includes(m.key)}
+                                  onChange={(e) => {
+                                    const perms = e.target.checked
+                                      ? [...(editUser.permissoes || []), m.key]
+                                      : (editUser.permissoes || []).filter((p) => p !== m.key);
+                                    setEditUser({ ...editUser, permissoes: perms });
+                                  }}
+                                  className="accent-primary w-3 h-3"
+                                />
+                                {m.label}
+                              </label>
+                            ))}
+                          </div>
                         </div>
                       </td>
                       <td className="py-2 px-4 flex gap-1">

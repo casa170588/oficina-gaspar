@@ -41,7 +41,7 @@ Deno.serve(async (req) => {
     const { data: authData, error: authError } = await authClient.auth.getUser();
     if (authError || !authData.user) return json({ error: "Unauthorized" }, 401);
 
-    const { action, id, nome, senha, nivel, avatar_url } = await req.json();
+    const { action, id, nome, senha, nivel, avatar_url, permissoes } = await req.json();
 
     if (action === "create") {
       if (!nome || !senha) return json({ error: "Nome e senha são obrigatórios" }, 400);
@@ -67,6 +67,7 @@ Deno.serve(async (req) => {
         login: generatedEmail,
         nivel: nivel || "TÉCNICO",
         avatar_url: avatar_url || null,
+        permissoes: permissoes || ["dashboard","os-veiculo","os-rastreamento","gerenciar-os","estoque","estoque-pneus","patio","usuarios"],
       });
 
       if (profileError) {
@@ -94,6 +95,7 @@ Deno.serve(async (req) => {
           ...(nome ? { nome } : {}),
           ...(nivel ? { nivel } : {}),
           ...(avatar_url !== undefined ? { avatar_url } : {}),
+          ...(permissoes !== undefined ? { permissoes } : {}),
         })
         .eq("id", id);
 
