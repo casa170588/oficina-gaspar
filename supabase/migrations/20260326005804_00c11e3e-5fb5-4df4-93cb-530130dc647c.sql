@@ -1,0 +1,1 @@
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS permissoes text[] NOT NULL DEFAULT ARRAY['dashboard','os-veiculo','os-rastreamento','gerenciar-os','estoque','estoque-pneus','patio','usuarios'];
