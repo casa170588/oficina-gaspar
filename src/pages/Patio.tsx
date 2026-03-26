@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { Plus, Trash2, Edit2, X, Check, Truck, ParkingSquare } from "lucide-react";
+import { Plus, Trash2, Edit2, X, Check, Truck, ParkingSquare, CalendarDays } from "lucide-react";
 import { usePatio, VeiculoPatio } from "@/hooks/usePatio";
+import { format } from "date-fns";
 
 const TIPO_VEICULO = ["Carreta", "Bitren"] as const;
 const EIXOS = ["2 Eixos", "3 Eixos"] as const;
@@ -44,10 +45,14 @@ const Patio = () => {
   });
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
+  const [selectedDate, setSelectedDate] = useState(format(new Date(), "yyyy-MM-dd"));
 
-  const filtered = veiculos.filter(
-    (v) => v.placa.toLowerCase().includes(search.toLowerCase()) || v.frota.toLowerCase().includes(search.toLowerCase())
-  );
+  const filtered = veiculos.filter((v) => {
+    const matchSearch = v.placa.toLowerCase().includes(search.toLowerCase()) || v.frota.toLowerCase().includes(search.toLowerCase());
+    const vDate = v.created_at ? v.created_at.substring(0, 10) : "";
+    const matchDate = !selectedDate || vDate === selectedDate;
+    return matchSearch && matchDate;
+  });
 
   const stats = {
     total: veiculos.length,
@@ -101,9 +106,16 @@ const Patio = () => {
         ))}
       </div>
 
-      {/* Search + Add */}
-      <div className="flex gap-3">
-        <input value={search} onChange={(e) => setSearch(e.target.value)} className="input-neon flex-1" placeholder="Buscar por placa ou frota..." />
+      {/* Date filter + Search + Add */}
+      <div className="flex flex-wrap gap-3">
+        <div className="flex items-center gap-2">
+          <CalendarDays className="w-4 h-4 text-primary" />
+          <input type="date" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} className="input-neon text-sm" />
+          {selectedDate && (
+            <button onClick={() => setSelectedDate("")} className="text-xs text-muted-foreground hover:text-foreground">Todos</button>
+          )}
+        </div>
+        <input value={search} onChange={(e) => setSearch(e.target.value)} className="input-neon flex-1 min-w-[150px]" placeholder="Buscar por placa ou frota..." />
         <Button variant="neonCyan" onClick={() => setShowAdd(true)}><Plus className="w-4 h-4" /> Cadastrar</Button>
       </div>
 

@@ -5,15 +5,15 @@ import { LayoutDashboard, FileText, Package, Users, LogOut, Menu, X, User, Radar
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
-const navItems = [
-  { path: "/dashboard", label: "Painel", icon: LayoutDashboard },
-  { path: "/os-veiculo", label: "O.S. Veículo", icon: FileText },
-  { path: "/os-rastreamento", label: "O.S. Rastreamento", icon: Radar },
-  { path: "/gerenciar-os", label: "Gerenciar O.S.", icon: ClipboardList },
-  { path: "/estoque", label: "Estoque Peças", icon: Package },
-  { path: "/estoque-pneus", label: "Estoque Pneus", icon: CircleDot },
-  { path: "/patio", label: "Pátio", icon: ParkingSquare },
-  { path: "/usuarios", label: "Usuários", icon: Users },
+const allNavItems = [
+  { path: "/dashboard", key: "dashboard", label: "Painel", icon: LayoutDashboard },
+  { path: "/os-veiculo", key: "os-veiculo", label: "O.S. Veículo", icon: FileText },
+  { path: "/os-rastreamento", key: "os-rastreamento", label: "O.S. Rastreamento", icon: Radar },
+  { path: "/gerenciar-os", key: "gerenciar-os", label: "Gerenciar O.S.", icon: ClipboardList },
+  { path: "/estoque", key: "estoque", label: "Estoque Peças", icon: Package },
+  { path: "/estoque-pneus", key: "estoque-pneus", label: "Estoque Pneus", icon: CircleDot },
+  { path: "/patio", key: "patio", label: "Pátio", icon: ParkingSquare },
+  { path: "/usuarios", key: "usuarios", label: "Usuários", icon: Users },
 ];
 
 const AppLayout = () => {
@@ -63,7 +63,12 @@ const AppLayout = () => {
 
             {/* Navigation */}
             <nav className="flex-1 px-3 space-y-1">
-              {navItems.map((item) => {
+              {allNavItems.filter((item) => {
+                if (user?.level === "MASTER") return true;
+                const perms = (user as any)?.permissoes as string[] | undefined;
+                if (!perms || perms.length === 0) return true;
+                return perms.includes(item.key);
+              }).map((item) => {
                 const Icon = item.icon;
                 const active = location.pathname === item.path;
                 return (

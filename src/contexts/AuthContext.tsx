@@ -8,6 +8,7 @@ interface User {
   cpf: string;
   level: string;
   avatar?: string;
+  permissoes?: string[];
 }
 
 interface AuthContextType {
@@ -46,6 +47,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         cpf: data.cpf,
         level: data.nivel,
         avatar: data.avatar_url || undefined,
+        permissoes: (data as any).permissoes || undefined,
       });
     } else {
       // Create default profile only if none exists (unique constraint prevents duplicates)
