@@ -1,7 +1,7 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate, useLocation, Outlet } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { LayoutDashboard, FileText, Package, Users, LogOut, Menu, X, User, Radar, ClipboardList, CircleDot } from "lucide-react";
+import { LayoutDashboard, FileText, Package, Users, LogOut, Menu, X, User, Radar, ClipboardList, CircleDot, ParkingSquare } from "lucide-react";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -12,6 +12,7 @@ const navItems = [
   { path: "/gerenciar-os", label: "Gerenciar O.S.", icon: ClipboardList },
   { path: "/estoque", label: "Estoque Peças", icon: Package },
   { path: "/estoque-pneus", label: "Estoque Pneus", icon: CircleDot },
+  { path: "/patio", label: "Pátio", icon: ParkingSquare },
   { path: "/usuarios", label: "Usuários", icon: Users },
 ];
 
