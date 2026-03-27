@@ -14,6 +14,57 @@ export type Database = {
   }
   public: {
     Tables: {
+      frota_fixa: {
+        Row: {
+          ano: string
+          chassi: string
+          cor: string
+          created_at: string
+          documento_url: string | null
+          filial: string
+          frota: string
+          id: string
+          marca: string
+          modelo: string
+          observacoes: string
+          placa: string
+          renavam: string
+          updated_at: string
+        }
+        Insert: {
+          ano?: string
+          chassi?: string
+          cor?: string
+          created_at?: string
+          documento_url?: string | null
+          filial?: string
+          frota?: string
+          id?: string
+          marca?: string
+          modelo?: string
+          observacoes?: string
+          placa?: string
+          renavam?: string
+          updated_at?: string
+        }
+        Update: {
+          ano?: string
+          chassi?: string
+          cor?: string
+          created_at?: string
+          documento_url?: string | null
+          filial?: string
+          frota?: string
+          id?: string
+          marca?: string
+          modelo?: string
+          observacoes?: string
+          placa?: string
+          renavam?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       ordens_servico: {
         Row: {
           created_at: string
