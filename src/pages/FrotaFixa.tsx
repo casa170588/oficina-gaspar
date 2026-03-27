@@ -149,9 +149,16 @@ const FrotaFixa = () => {
                     <td className="px-3 py-3">{v.ano}</td>
                     <td className="px-3 py-3 font-mono text-xs">{v.chassi || "—"}</td>
                     <td className="px-3 py-3">
-                      {v.documento_url ? (
-                        <a href={v.documento_url} target="_blank" rel="noopener noreferrer" className="text-primary hover:text-primary/80"><FileText className="w-4 h-4" /></a>
-                      ) : <span className="text-muted-foreground text-xs">—</span>}
+                      <div className="flex items-center gap-1">
+                        {v.documento_url ? (
+                          <a href={v.documento_url} target="_blank" rel="noopener noreferrer" className="text-primary hover:text-primary/80" title="Ver documento"><FileText className="w-4 h-4" /></a>
+                        ) : null}
+                        <input ref={uploadingDocId === v.id ? rowDocRef : undefined} type="file" accept=".pdf,image/*" className="hidden" onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (file) { await uploadDocumento(v.id, file); setUploadingDocId(null); }
+                        }} />
+                        <button onClick={() => { setUploadingDocId(v.id); setTimeout(() => rowDocRef.current?.click(), 50); }} className="text-muted-foreground hover:text-primary" title="Enviar documento"><Upload className="w-4 h-4" /></button>
+                      </div>
                     </td>
                     <td className="px-3 py-3 text-right">
                       <div className="flex gap-1 justify-end">
