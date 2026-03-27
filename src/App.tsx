@@ -12,6 +12,7 @@ import Estoque from "./pages/Estoque";
 import EstoquePneus from "./pages/EstoquePneus";
 import GestaoUsuarios from "./pages/GestaoUsuarios";
 import Patio from "./pages/Patio";
+import FrotaFixa from "./pages/FrotaFixa";
 import AppLayout from "./components/AppLayout";
 import NotFound from "./pages/NotFound";
 
@@ -41,6 +42,7 @@ const AppRoutes = () => {
         <Route path="/estoque-pneus" element={<EstoquePneus />} />
         <Route path="/usuarios" element={<GestaoUsuarios />} />
         <Route path="/patio" element={<Patio />} />
+        <Route path="/frota-fixa" element={<FrotaFixa />} />
       </Route>
       <Route path="*" element={<NotFound />} />
     </Routes>

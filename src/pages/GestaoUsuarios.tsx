@@ -13,6 +13,7 @@ const MODULOS = [
   { key: "estoque", label: "Estoque Peças" },
   { key: "estoque-pneus", label: "Estoque Pneus" },
   { key: "patio", label: "Pátio" },
+  { key: "frota-fixa", label: "Frota Fixa" },
   { key: "usuarios", label: "Usuários" },
 ];
 
@@ -129,26 +130,37 @@ const GestaoUsuarios = () => {
 
   const saveEdit = async () => {
     if (!editUser || !editingId) return;
-    const { error } = await supabase.functions.invoke("user-management", {
-      body: {
-        action: "update",
-        id: editingId,
-        nome: editUser.nome,
-        nivel: editUser.nivel,
-        avatar_url: editUser.avatar_url,
-        senha: editUser.senha,
-        permissoes: editUser.permissoes,
-      },
-    });
+    
+    const body: any = {
+      action: "update",
+      id: editingId,
+      nome: editUser.nome,
+      nivel: editUser.nivel,
+      avatar_url: editUser.avatar_url,
+      permissoes: editUser.permissoes,
+    };
+    // Only send password if user actually typed one
+    if (editUser.senha && editUser.senha.length >= 6) {
+      body.senha = editUser.senha;
+    }
+
+    const { data, error } = await supabase.functions.invoke("user-management", { body });
 
     if (error) {
       toast({ title: "Erro ao atualizar", description: error.message, variant: "destructive" });
       return;
     }
+    
+    // Check response for errors
+    if (data?.error) {
+      toast({ title: "Erro ao atualizar", description: data.error, variant: "destructive" });
+      return;
+    }
+
     setEditingId(null);
     setEditUser(null);
     await fetchUsers();
-    toast({ title: "Usuário atualizado" });
+    toast({ title: "Usuário atualizado!" });
   };
 
   const cancelEdit = () => {

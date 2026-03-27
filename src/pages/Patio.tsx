@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { Plus, Trash2, Edit2, X, Check, Truck, ParkingSquare, CalendarDays } from "lucide-react";
+import { Plus, Trash2, Edit2, X, Check, Truck, ParkingSquare, CalendarDays, FileDown } from "lucide-react";
+import jsPDF from "jspdf";
 import { usePatio, VeiculoPatio } from "@/hooks/usePatio";
 import { format } from "date-fns";
 
@@ -68,7 +69,7 @@ const Patio = () => {
     if (!newV.placa || !newV.frota) return;
     await addVeiculo(newV);
     setNewV({ placa: "", frota: "", tipo_veiculo: "Carreta", eixos: "2 Eixos", carga: "Vazia", situacao: "Livre", motivo_bloqueio: "" });
-    setShowAdd(false);
+    // Modal stays open for batch registrations
   };
 
   const startEdit = (v: VeiculoPatio) => {
@@ -80,6 +81,34 @@ const Patio = () => {
     if (!editingId) return;
     await updateVeiculo(editingId, editData);
     setEditingId(null);
+  };
+
+  const exportPDF = () => {
+    const doc = new jsPDF();
+    doc.setFontSize(16);
+    doc.text("RELATÓRIO DE PÁTIO", 20, 15);
+    doc.setFontSize(10);
+    doc.text(`Data: ${selectedDate || "Todos"}`, 20, 22);
+    let y = 30;
+    doc.setFont("helvetica", "bold");
+    doc.text("Placa", 15, y); doc.text("Frota", 40, y); doc.text("Tipo", 65, y); doc.text("Eixos", 95, y); doc.text("Carga", 120, y); doc.text("Situação", 148, y); doc.text("Motivo", 175, y);
+    doc.setFont("helvetica", "normal");
+    y += 6;
+    filtered.forEach((v) => {
+      if (y > 280) { doc.addPage(); y = 20; }
+      doc.text(v.placa, 15, y); doc.text(v.frota, 40, y); doc.text(v.tipo_veiculo, 65, y); doc.text(v.eixos, 95, y); doc.text(v.carga, 120, y); doc.text(v.situacao, 148, y); doc.text(v.motivo_bloqueio || "", 175, y);
+      y += 6;
+    });
+    doc.save(`patio_${selectedDate || "todos"}.pdf`);
+  };
+
+  const exportCSV = () => {
+    const headers = "Placa,Frota,Tipo,Eixos,Carga,Situação,Motivo\n";
+    const rows = filtered.map((v) => `${v.placa},${v.frota},${v.tipo_veiculo},${v.eixos},${v.carga},${v.situacao},${v.motivo_bloqueio || ""}`).join("\n");
+    const blob = new Blob([headers + rows], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a"); a.href = url; a.download = `patio_${selectedDate || "todos"}.csv`; a.click();
+    URL.revokeObjectURL(url);
   };
 
   if (loading) return <div className="flex items-center justify-center h-64 text-muted-foreground">Carregando...</div>;
@@ -117,6 +146,8 @@ const Patio = () => {
         </div>
         <input value={search} onChange={(e) => setSearch(e.target.value)} className="input-neon flex-1 min-w-[150px]" placeholder="Buscar por placa ou frota..." />
         <Button variant="neonCyan" onClick={() => setShowAdd(true)}><Plus className="w-4 h-4" /> Cadastrar</Button>
+        <Button variant="outline" onClick={exportPDF}><FileDown className="w-4 h-4" /> PDF</Button>
+        <Button variant="outline" onClick={exportCSV}><FileDown className="w-4 h-4" /> CSV</Button>
       </div>
 
       {/* Vehicles Table */}

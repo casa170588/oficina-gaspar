@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { Plus, Search, AlertTriangle, Pencil, Check, X, Trash2, CircleDot } from "lucide-react";
+import { Plus, Search, Pencil, Check, X, Trash2, CircleDot } from "lucide-react";
 import { usePneus, type Pneu } from "@/hooks/usePneus";
 
 const TIPOS_PNEU = ["Novo", "Recapado"] as const;
@@ -35,7 +35,7 @@ const EstoquePneus = () => {
       (filterTipo ? p.tipo === filterTipo : true)
   );
 
-  const lowStock = pneus.filter((p) => p.quantidade <= 2);
+  
 
   const handleAdd = async () => {
     if (!newPneu.medida || !newPneu.tipo) return;
@@ -85,21 +85,8 @@ const EstoquePneus = () => {
         </Button>
       </div>
 
-      {lowStock.length > 0 && (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-primary/5 border border-primary/30 rounded-xl p-4 glow-green">
-          <div className="flex items-center gap-2 mb-2">
-            <AlertTriangle className="w-5 h-5 text-primary" />
-            <span className="font-display font-bold text-primary text-sm">ALERTAS DE ESTOQUE BAIXO</span>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {lowStock.map((p) => (
-              <span key={p.id} className="text-xs bg-primary/10 text-primary rounded-full px-3 py-1 font-semibold">
-                {p.medida} ({p.tipo}): {p.quantidade} un.
-              </span>
-            ))}
-          </div>
-        </motion.div>
-      )}
+
+
 
       <div className="flex gap-3 flex-wrap">
         <div className="relative flex-1 min-w-[200px]">
