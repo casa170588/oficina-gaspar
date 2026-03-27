@@ -13,6 +13,7 @@ const MODULOS = [
   { key: "estoque", label: "Estoque Peças" },
   { key: "estoque-pneus", label: "Estoque Pneus" },
   { key: "patio", label: "Pátio" },
+  { key: "frota-fixa", label: "Frota Fixa" },
   { key: "usuarios", label: "Usuários" },
 ];
 

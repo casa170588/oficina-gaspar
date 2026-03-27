@@ -67,7 +67,7 @@ Deno.serve(async (req) => {
         login: generatedEmail,
         nivel: nivel || "TÉCNICO",
         avatar_url: avatar_url || null,
-        permissoes: permissoes || ["dashboard","os-veiculo","os-rastreamento","gerenciar-os","estoque","estoque-pneus","patio","usuarios"],
+        permissoes: permissoes || ["dashboard","os-veiculo","os-rastreamento","gerenciar-os","estoque","estoque-pneus","patio","frota-fixa","usuarios"],
       });
 
       if (profileError) {
