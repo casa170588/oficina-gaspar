@@ -101,13 +101,14 @@ Deno.serve(async (req) => {
 
       if (updateProfileError) return json({ error: updateProfileError.message }, 400);
 
-      if (senha && profile.user_id) {
-        const { error: updateAuthError } = await adminClient.auth.admin.updateUserById(profile.user_id, {
-          password: senha,
-          user_metadata: nome ? { nome } : undefined,
-        });
+      if (senha && senha.length >= 6 && profile.user_id) {
+        const updateData: any = { password: senha };
+        if (nome) updateData.user_metadata = { nome };
+        const { error: updateAuthError } = await adminClient.auth.admin.updateUserById(profile.user_id, updateData);
 
         if (updateAuthError) return json({ error: updateAuthError.message }, 400);
+      } else if (nome && profile.user_id) {
+        await adminClient.auth.admin.updateUserById(profile.user_id, { user_metadata: { nome } });
       }
 
       return json({ ok: true });
