@@ -44,9 +44,13 @@ export function usePatio() {
   }, []);
 
   const addVeiculo = async (v: Omit<VeiculoPatio, "id" | "created_at" | "updated_at">) => {
-    const { error } = await supabase.from("patio").insert(v);
+    const { error } = await supabase.from("patio").insert({
+      ...v,
+      motivo_bloqueio: v.motivo_bloqueio || null,
+    });
     if (error) {
-      toast({ title: "Erro ao cadastrar veículo", variant: "destructive" });
+      console.error("Patio insert error:", error);
+      toast({ title: "Erro ao cadastrar veículo", description: error.message, variant: "destructive" });
       return false;
     }
     await fetchVeiculos();
