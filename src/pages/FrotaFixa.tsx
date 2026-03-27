@@ -20,6 +20,8 @@ const FrotaFixa = () => {
   });
   const docRef = useRef<HTMLInputElement>(null);
   const editDocRef = useRef<HTMLInputElement>(null);
+  const [uploadingDocId, setUploadingDocId] = useState<string | null>(null);
+  const rowDocRef = useRef<HTMLInputElement>(null);
 
   const filtered = veiculos.filter((v) => {
     const matchSearch = v.placa.toLowerCase().includes(search.toLowerCase()) || v.frota.toLowerCase().includes(search.toLowerCase()) || v.marca.toLowerCase().includes(search.toLowerCase());
