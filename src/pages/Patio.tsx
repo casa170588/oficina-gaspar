@@ -46,12 +46,13 @@ const Patio = () => {
   });
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
-  const [selectedDate, setSelectedDate] = useState(format(new Date(), "yyyy-MM-dd"));
+  const [selectedDate, setSelectedDate] = useState("");
 
   const filtered = veiculos.filter((v) => {
     const matchSearch = v.placa.toLowerCase().includes(search.toLowerCase()) || v.frota.toLowerCase().includes(search.toLowerCase());
-    const vDate = v.created_at ? v.created_at.substring(0, 10) : "";
-    const matchDate = !selectedDate || vDate === selectedDate;
+    if (!selectedDate) return matchSearch;
+    const vLocalDate = format(new Date(v.created_at), "yyyy-MM-dd");
+    const matchDate = vLocalDate === selectedDate;
     return matchSearch && matchDate;
   });
 
