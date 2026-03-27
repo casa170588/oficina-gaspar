@@ -1,7 +1,7 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate, useLocation, Outlet } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { LayoutDashboard, FileText, Package, Users, LogOut, Menu, X, User, Radar, ClipboardList, CircleDot, ParkingSquare } from "lucide-react";
+import { LayoutDashboard, FileText, Package, Users, LogOut, Menu, X, User, Radar, ClipboardList, CircleDot, ParkingSquare, Truck } from "lucide-react";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -13,6 +13,7 @@ const allNavItems = [
   { path: "/estoque", key: "estoque", label: "Estoque Peças", icon: Package },
   { path: "/estoque-pneus", key: "estoque-pneus", label: "Estoque Pneus", icon: CircleDot },
   { path: "/patio", key: "patio", label: "Pátio", icon: ParkingSquare },
+  { path: "/frota-fixa", key: "frota-fixa", label: "Frota Fixa", icon: Truck },
   { path: "/usuarios", key: "usuarios", label: "Usuários", icon: Users },
 ];
 
