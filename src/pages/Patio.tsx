@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { Plus, Trash2, Edit2, X, Check, Truck, ParkingSquare, CalendarDays } from "lucide-react";
+import { Plus, Trash2, Edit2, X, Check, Truck, ParkingSquare, CalendarDays, FileDown } from "lucide-react";
+import jsPDF from "jspdf";
 import { usePatio, VeiculoPatio } from "@/hooks/usePatio";
 import { format } from "date-fns";
 
@@ -68,7 +69,7 @@ const Patio = () => {
     if (!newV.placa || !newV.frota) return;
     await addVeiculo(newV);
     setNewV({ placa: "", frota: "", tipo_veiculo: "Carreta", eixos: "2 Eixos", carga: "Vazia", situacao: "Livre", motivo_bloqueio: "" });
-    setShowAdd(false);
+    // Modal stays open for batch registrations
   };
 
   const startEdit = (v: VeiculoPatio) => {
